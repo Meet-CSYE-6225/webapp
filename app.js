@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { StatusCodes } = require('http-status-codes');
 const { Client } = require('pg');
@@ -23,7 +22,10 @@ async function ensureDatabaseExists() {
     await client.connect();
     const dbName = process.env.DB_NAME;
 
-    const checkDB = await client.query(`SELECT 1 FROM pg_database WHERE datname = $1;`, [dbName]);
+    const checkDB = await client.query(
+      `SELECT 1 FROM pg_database WHERE datname = $1;`,
+      [dbName]
+    );
 
     if (checkDB.rowCount === 0) {
       console.log(` Database "${dbName}" does not exist. Creating it...`);
@@ -60,22 +62,23 @@ app.use('/healthz', (req, res, next) => {
     const hasQueryParams = Object.keys(req.query).length > 0;
 
     if (hasBody || hasQueryParams) {
-      return res.status(StatusCodes.BAD_REQUEST).set('Cache-Control', 'no-cache').end();
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .set('Cache-Control', 'no-cache')
+        .end();
     }
   }
   next();
 });
 
 // Health Check Endpoint with Dynamic Database and Table Creation
+// This route matches only exactly '/healthz'
 app.get('/healthz', async (req, res) => {
   try {
     console.log(' Checking database and tables before processing request...');
     
     // Ensure database exists
     await ensureDatabaseExists();
-    await sequelize.query(
-      `SELECT setval('health_checks_check_id_seq', COALESCE((SELECT MAX(check_id) FROM health_checks), 1), false);`
-    );
     // Reconnect Sequelize to ensure pointing to the correct database
     await sequelize.authenticate();
     console.log(' Database connection verified.');
@@ -87,17 +90,35 @@ app.get('/healthz', async (req, res) => {
     await HealthCheck.create({});
     console.log(' Health check entry added.');
 
-    res.status(StatusCodes.OK).set('Cache-Control', 'no-cache').end();
+    return res
+      .status(StatusCodes.OK)
+      .set('Cache-Control', 'no-cache')
+      .end();
   } catch (error) {
     console.error(' Health check failed:', error);
-    res.status(StatusCodes.SERVICE_UNAVAILABLE).set('Cache-Control', 'no-cache').end();
+    return res
+      .status(StatusCodes.SERVICE_UNAVAILABLE)
+      .set('Cache-Control', 'no-cache')
+      .end();
   }
 });
 
-// Handle unsupported methods
+// This middleware catches any requests to subpaths under '/healthz'
+// For example, '/healthz/app' will return 400 Bad Request
+app.use('/healthz/*', (req, res) => {
+  return res
+    .status(StatusCodes.BAD_REQUEST)
+    .set('Cache-Control', 'no-cache')
+    .end();
+});
+
+// Handle unsupported methods on '/healthz'
 app.all('/healthz', (req, res) => {
   if (req.method !== 'GET') {
-    res.status(StatusCodes.METHOD_NOT_ALLOWED).set('Cache-Control', 'no-cache').end();
+    return res
+      .status(StatusCodes.METHOD_NOT_ALLOWED)
+      .set('Cache-Control', 'no-cache')
+      .end();
   }
 });
 
