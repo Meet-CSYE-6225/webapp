@@ -1,15 +1,19 @@
 const request = require('supertest');
-const { expect } = require('chai');
 const sinon = require('sinon');
 const { Client } = require('pg');
 require('dotenv').config();
 
+let expect; // Declare expect for Chai
 const app = require('../app'); // Use the app instance directly
 let isPostgresRunning = false;
 
 describe('Health Check API Tests', function() {
-  // Global check for PostgreSQL service before any tests run.
+  // Dynamically import Chai before tests run
   before(async function() {
+    const chai = await import('chai');
+    expect = chai.expect;
+
+    // Global check for PostgreSQL service before any tests run.
     const client = new Client({
       user: process.env.DB_USER,
       host: process.env.DB_HOST,
