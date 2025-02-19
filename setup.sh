@@ -78,13 +78,9 @@ sudo apt install nodejs -y
 cd /opt/csye6225/webapp-fork || { echo "Directory /opt/csye6225/webapp-fork not found. Exiting."; exit 1; }
 
 
-# Check if package.json exists
-if [ -f package.json ]; then
-    echo "package.json found; skipping 'npm install'."
-else
-    echo "package.json not found; running 'npm install'."
+
     npm install
-fi
+
 
 # Create environment variables file (.env)
 echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=10.116.0.3\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null

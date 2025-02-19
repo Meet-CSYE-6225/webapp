@@ -1,33 +1,31 @@
-name: Web App CI Workflow
+name: Web App CI
 
 on:
   pull_request:
+    branches:
+      - main  # adjust if your main branch has a different name
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     services:
-      
       postgres:
-        image: postgres:16
+        image: postgres:13
         env:
+          POSTGRES_DB: health_check_db
           POSTGRES_USER: ${{ secrets.DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
         ports:
           - 5432:5432
-        
-
-    env:
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_HOST: postgres
-      DB_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Checkout Web App repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Setup Node.js
@@ -35,14 +33,17 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Wait for PostgreSQL to be Ready
-        run: |
-          for i in {1..10}; do
-            pg_isready -h postgres && break || sleep 5;
-          done
-
-      - name: Run Application Tests
+      - name: Run tests
+        env:
+          # These environment variables override .env values during the CI run.
+          DB_NAME: health_check_db
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: localhost
+          DB_PORT: 5432
+          PORT: 8080
+          NODE_ENV: test
         run: npm test
