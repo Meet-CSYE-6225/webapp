@@ -88,20 +88,11 @@ app.get('/healthz', async (req, res) => {
     await sequelize.authenticate();
     console.log('Database connection verified.');
 
-    // Skip checking the HealthCheck table in test mode
-    if (process.env.NODE_ENV !== 'test') {
-      await checkTableExists();
-    } else {
-      console.log('Test environment detected; skipping table existence check.');
-    }
+    // Always check for the HealthCheck table existence
+    await checkTableExists();
 
-    // Only create a health check entry if not in a test environment
-    if (process.env.NODE_ENV !== 'test') {
-      await HealthCheck.create({});
-      console.log('Health check entry added.');
-    } else {
-      console.log('Test environment detected; skipping DB entry creation.');
-    }
+    await HealthCheck.create({});
+    console.log('Health check entry added.');
 
     return res
       .status(StatusCodes.OK)

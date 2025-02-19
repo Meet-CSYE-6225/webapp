@@ -5,13 +5,23 @@ require('dotenv').config();
 
 let expect; // Declare expect for Chai
 const app = require('../app'); // Use the app instance directly
+const sequelize = require('../config/database'); // Import the Sequelize instance
 let isPostgresRunning = false;
 
 describe('Health Check API Tests', function() {
-  // Dynamically import Chai before tests run
+  // Dynamically import Chai and ensure the HealthCheck table exists before tests run.
   before(async function() {
     const chai = await import('chai');
     expect = chai.expect;
+
+    // Synchronize tables to ensure HealthCheck table exists
+    try {
+      await sequelize.sync({ alter: true });
+      console.log('Tables synchronized for testing.');
+    } catch (syncError) {
+      console.error('Error synchronizing tables:', syncError);
+      throw syncError;
+    }
 
     // Global check for PostgreSQL service before any tests run.
     const client = new Client({
