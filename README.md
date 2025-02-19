@@ -25,6 +25,8 @@ This is a simple Node.js-based API for performing health checks on a PostgreSQL 
         - DB_HOST=your_database_host
         - DB_PORT=your_database_port
         - PORT=your_app_port
+## Run the application
+    npm install
 
 ## Error Handling
 
