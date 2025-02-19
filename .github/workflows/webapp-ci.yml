@@ -2,7 +2,7 @@ name: Web App CI Workflow
 
 on:
   pull_request:
-
+            branches: [ main ]
 jobs:
   test:
     runs-on: ubuntu-latest
