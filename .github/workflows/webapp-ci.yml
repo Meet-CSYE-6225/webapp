@@ -3,7 +3,7 @@ name: Web App CI
 on:
   pull_request:
     branches:
-      - main  # adjust if your main branch has a different name
+      - main  
 
 jobs:
   test:
