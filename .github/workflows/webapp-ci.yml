@@ -17,7 +17,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U meet" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "pg_isready -U $${POSTGRES_USER}" --health-interval 10s --health-timeout 5s --health-retries 5
 
     env:
       DB_NAME: ${{ secrets.DB_NAME }}
@@ -38,7 +38,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # Install the PostgreSQL client so that pg_isready is available
+      # Install PostgreSQL client so that pg_isready is available
       - name: Install PostgreSQL Client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
