@@ -38,6 +38,10 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      # Install the PostgreSQL client so that pg_isready is available
+      - name: Install PostgreSQL Client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
       - name: Wait for PostgreSQL to be Ready
         run: |
           for i in {1..20}; do
