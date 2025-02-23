@@ -35,20 +35,7 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-      
-      - name: Install PostgreSQL
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql postgresql-contrib
- 
-      # Start PostgreSQL service and create/update the test DB user
-      - name: Set up PostgreSQL
-        run: |
-          sudo service postgresql start
-          sudo -u postgres psql -c "CREATE USER ${{ secrets.DB_USER }} WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
-          sudo -u postgres psql -c "CREATE DATABASE ${{ secrets.DB_NAME }};"
-          sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${{ secrets.DB_NAME }} TO ${{ secrets.DB_USER }};"
-          sudo -u postgres psql -c "ALTER DATABASE ${{ secrets.DB_NAME }} OWNER TO ${{ secrets.DB_USER }};"
+
       - name: Run tests
         env:
           # These environment variables override .env values during the CI run.
