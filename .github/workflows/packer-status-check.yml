@@ -14,7 +14,8 @@ jobs:
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
-
+      - name: Run Packer Init
+        run: packer init .
       - name: Check Packer Format
         run: packer fmt -diff -check .
 
