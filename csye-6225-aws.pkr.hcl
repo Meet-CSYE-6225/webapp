@@ -104,14 +104,14 @@ source "amazon-ebs" "ubuntu" {
   ssh_timeout   = var.ssh_timeout
   source_ami_filter {
     filters = {
-      name                = var.ubuntu_image_filter
+      name                  = var.ubuntu_image_filter
       "virtualization-type" = var.virtualization_type
       "root-device-type"    = var.root_device_type
     }
     owners      = [var.amazon_ami_owner]
     most_recent = true
   }
-  ssh_username  = var.ssh_username
+  ssh_username = var.ssh_username
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = var.volume_size
@@ -124,7 +124,7 @@ build {
   sources = [
     "source.amazon-ebs.ubuntu"
   ]
-  
+
   # Create the destination directory and adjust its ownership
   provisioner "shell" {
     inline = [
@@ -132,17 +132,17 @@ build {
       "sudo chown ${var.ssh_username}:${var.ssh_username} ${var.artifact_dest_dir}"
     ]
   }
-  
+
   # Upload the artifact file
   provisioner "file" {
     source      = var.artifact_path
     destination = var.artifact_destination
     generated   = true
   }
-  
+
   # Run the provisioning script with sudo and inject ARTIFACT_PATH into the command
   provisioner "shell" {
-    script = var.provision_script
+    script          = var.provision_script
     execute_command = "sudo ARTIFACT_PATH=${var.artifact_destination} bash {{ .Path }}"
   }
 }
