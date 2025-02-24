@@ -110,15 +110,15 @@ jobs:
           packer init .
           packer validate csye-6225.pkr.hcl
           packer build \
-            -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" 
-            -var "instance_type=${{ secrets.PACKER_INSTANCE_TYPE }}" 
-            -var "ami_name=${{ secrets.PACKER_AMI_NAME }}" 
-            -var "aws_region=${{ secrets.AWS_REGION }}" 
-            -var "gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" 
-            -var "gcp_zone=${{ secrets.GCP_ZONE }}" 
-            -var "gcp_machine_type=${{ secrets.GCP_MACHINE_TYPE }}" 
-            -var "gcp_image_name=${{ secrets.GCP_IMAGE_NAME }}" 
+            -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" \
+            -var "instance_type=${{ secrets.PACKER_INSTANCE_TYPE }}" \
+            -var "ami_name=${{ secrets.PACKER_AMI_NAME }}" \
+            -var "aws_region=${{ secrets.AWS_REGION }}" \
+            -var "gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
+            -var "gcp_machine_type=${{ secrets.GCP_MACHINE_TYPE }}" \
+            -var "gcp_image_name=${{ secrets.GCP_IMAGE_NAME }}" \
             -var "gcp_source_image_family=${{ secrets.GCP_SOURCE_IMAGE_FAMILY }}" \
-            -var "gcp_source_image_project_id=${{ secrets.GCP_SOURCE_IMAGE_PROJECT_ID }}" 
-            -var "gcp_disk_type=${{ secrets.GCP_DISK_TYPE }}" 
+            -var "gcp_source_image_project_id=${{ secrets.GCP_SOURCE_IMAGE_PROJECT_ID }}" \
+            -var "gcp_disk_type=${{ secrets.GCP_DISK_TYPE }}" \
             csye-6225.pkr.hcl
