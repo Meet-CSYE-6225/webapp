@@ -10,7 +10,6 @@ jobs:
   build-artifact:
     runs-on: ubuntu-latest
     env:
-      # DATABASE_URL uses the secret for the host port.
       DATABASE_URL: postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
     services:
       postgres:
@@ -100,7 +99,10 @@ jobs:
         run: ls -la
 
       - name: Build Custom Images with Packer
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
         run: |
+          echo "Using GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
           packer init .
           packer validate csye-6225.pkr.hcl
           packer build \
