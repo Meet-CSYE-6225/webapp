@@ -8,6 +8,27 @@ on:
 jobs:
   build-artifact:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: health_check_db
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_HOST: postgres    # Use the service hostname
+      DB_NAME: health_check_db
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      NODE_ENV: test
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -43,7 +64,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: webapp-zip
           path: .
@@ -67,4 +88,3 @@ jobs:
             -var "instance_type=${{ secrets.PACKER_INSTANCE_TYPE }}" \
             -var "ami_name=${{ secrets.PACKER_AMI_NAME }}" \
             csye-6225-aws.pkr.hcl
-
