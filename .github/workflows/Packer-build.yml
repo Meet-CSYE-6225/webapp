@@ -1,29 +1,13 @@
 name: Build Artifact and Run Packer
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
 jobs:
   build-artifact:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -32,14 +16,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for PostgreSQL to be ready..."
-            sleep 5
-          done
-
+      
       - name: Install Dependencies
         run: npm install
 
@@ -48,12 +25,11 @@ jobs:
 
       - name: Build Application Artifact
         run: |
-          # Run your build command; it must produce a file named "webapp.zip" at the repository root.
           npm run build
           ls -l webapp.zip
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: webapp-zip
           path: webapp.zip
@@ -71,6 +47,9 @@ jobs:
           name: webapp-zip
           path: .
 
+      - name: List Files for Debugging
+        run: ls -la
+
       - name: Setup AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -79,7 +58,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Setup Packer
-        uses: hashicorp/setup-packer@v1
+        uses: hashicorp/setup-packer@v2
 
       - name: Build Custom Images with Packer
         run: |
