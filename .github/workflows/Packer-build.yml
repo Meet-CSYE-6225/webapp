@@ -1,7 +1,7 @@
 name: Build Artifact and Run Packer
 
 on:
-  pull_request:
+  push:
     branches:
       - main
   workflow_dispatch:
@@ -13,9 +13,9 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -24,12 +24,7 @@ jobs:
         ports:
           - 5432:5432
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
-      DB_NAME: test_db
-      DB_USER: postgres
-      DB_PASSWORD: "postgres"
-      DB_HOST: localhost
-      DB_PORT: 5432
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -47,15 +42,15 @@ jobs:
 
       - name: Build Application Artifact
         run: |
-          echo "Creating zip artifact"
-          zip -r webapp.zip . -x "node_modules/*" ".git/*"
-          ls -l webapp.zip
+          echo "Creating zip artifact..."
+          zip -r "${{ secrets.ARTIFACT_PATH }}" . -x "node_modules/*" ".git/*"
+          ls -l "${{ secrets.ARTIFACT_PATH }}"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: webapp-zip
-          path: webapp.zip
+          path: ${{ secrets.ARTIFACT_PATH }}
 
   packer-build:
     runs-on: ubuntu-latest
@@ -63,12 +58,14 @@ jobs:
     env:
       PACKER_INSTANCE_TYPE: ${{ secrets.PACKER_INSTANCE_TYPE }}
       PACKER_AMI_NAME: ${{ secrets.PACKER_AMI_NAME }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ARTIFACT_PATH: ${{ secrets.ARTIFACT_PATH }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: webapp-zip
           path: .
@@ -90,4 +87,9 @@ jobs:
         run: |
           packer init .
           packer validate csye-6225-aws.pkr.hcl
-          packer build -var "artifact_path=webapp.zip" -var "instance_type=${PACKER_INSTANCE_TYPE}" -var "ami_name=${PACKER_AMI_NAME}" csye-6225-aws.pkr.hcl
+          packer build \
+            -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" \
+            -var "instance_type=${PACKER_INSTANCE_TYPE}" \
+            -var "ami_name=${PACKER_AMI_NAME}" \
+            -var "aws_region=${AWS_REGION}" \
+            csye-6225-aws.pkr.hcl
