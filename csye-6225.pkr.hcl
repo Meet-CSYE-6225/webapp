@@ -109,7 +109,7 @@ variable "volume_type" {
 
 variable "gcp_project_id" {
   type        = string
-  default     = "your-gcp-project-id"  # Replace or override via secrets
+  default     = "trydev-451920"  
   description = "GCP Project ID"
 }
 
