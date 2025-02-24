@@ -23,11 +23,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DB_HOST: postgres    # Use the service hostname
+      DB_HOST: postgres   # Ensure Sequelize connects to the service container
       DB_NAME: health_check_db
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_PORT: 5432
       NODE_ENV: test
     steps:
       - name: Checkout Repository
@@ -41,12 +41,20 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Wait for Postgres to be ready
+        run: |
+          echo "Waiting for Postgres..."
+          until pg_isready -h postgres -p 5432; do
+            echo "Postgres not ready yet, sleeping 5 seconds..."
+            sleep 5
+          done
+          echo "Postgres is ready!"
+
       - name: Run Tests
         run: npm test
 
       - name: Build Application Artifact
         run: |
-          # Run your build command; it must produce a file named "webapp.zip" at the repository root.
           npm run build
           ls -l webapp.zip
 
