@@ -14,8 +14,8 @@ jobs:
         image: postgres:latest
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -24,7 +24,7 @@ jobs:
         ports:
           - 5432:5432
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/health_check_db
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -38,6 +38,14 @@ jobs:
         run: npm install
 
       - name: Run Tests
+        env:
+          DB_NAME: "test_db"
+          DB_USER: "postgres"
+          DB_PASSWORD: "postgres"
+          DB_HOST: "localhost"
+          DB_PORT: "5432"
+          PORT: "8080"
+          NODE_ENV: test
         run: npm test
 
       - name: Build Application Artifact
