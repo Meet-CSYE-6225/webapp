@@ -157,7 +157,7 @@ source "googlecompute" "ubuntu" {
   machine_type            = var.gcp_machine_type
   image_name              = var.ami_name
   source_image_family     = "ubuntu-2204-lts"
-  source_image_project_id = "ubuntu-os-cloud"
+  source_image_project_id = ["ubuntu-os-cloud"]
   ssh_username            = var.ssh_username
   disk_size               = var.volume_size
   disk_type               = var.gcp_disk_type
