@@ -105,8 +105,17 @@ jobs:
       - name: List Repository Files
         run: ls -la
 
+      # Write the GCP credentials file using printf to preserve formatting.
+      - name: Write GCP Credentials File
+        run: |
+          printf '%s' "${{ secrets.GCP_SA_KEY }}" > gcp-key.json
+
       - name: Build Custom Image with Packer
         run: |
+          # Set the environment variable so the Google provider can find the credentials.
+          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/gcp-key.json
+          echo "Checking that gcp-key.json exists:"
+          ls -la $(pwd)/gcp-key.json
           packer init .
           packer validate csye-6225.pkr.hcl
           packer build \
