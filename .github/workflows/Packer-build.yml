@@ -30,7 +30,7 @@ jobs:
           ls -l webapp.zip
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: webapp-zip
           path: webapp.zip
