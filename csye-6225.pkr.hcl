@@ -180,7 +180,7 @@ source "googlecompute" "ubuntu" {
   machine_type            = var.gcp_machine_type
   image_name              = var.gcp_image_name
   source_image_family     = var.gcp_source_image_family
-  source_image_project_id = [var.gcp_source_image_project_id]  
+  source_image_project_id = [var.gcp_source_image_project_id]
   ssh_username            = var.ssh_username
   disk_size               = var.volume_size
   disk_type               = var.gcp_disk_type
