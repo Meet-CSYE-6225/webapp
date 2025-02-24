@@ -34,8 +34,8 @@ if [ ! -f "$ARTIFACT_PATH" ]; then
 fi
 
 # If needed, unzip the artifact:
-# sudo apt-get install -y unzip || true
-# sudo unzip -o "$ARTIFACT_PATH" -d /opt/csye6225/webapp
+sudo apt-get install -y unzip || true
+sudo unzip -o "$ARTIFACT_PATH" -d /opt/csye6225/webapp
 
 # Set ownership of the application directory
 sudo chown -R csye6225:csye6225 /opt/csye6225/webapp
