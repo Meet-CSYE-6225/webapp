@@ -97,7 +97,7 @@ jobs:
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
 
-      - name: Debug: List Repository Files
+      - name:  List Repository Files
         run: ls -la
 
       - name: Build Custom Image with Packer
