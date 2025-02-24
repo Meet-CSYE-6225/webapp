@@ -10,25 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:13
+        image: postgres:latest
         env:
-          POSTGRES_DB: health_check_db
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        ports:
-          - 5432:5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
     env:
-      DB_HOST: postgres   # Ensure Sequelize connects to the service container
-      DB_NAME: health_check_db
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_PORT: 5432
-      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -37,24 +32,23 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-      
-      - name: Install Dependencies
-        run: npm install
 
-      - name: Wait for Postgres to be ready
+      - name: Wait for PostgreSQL to be ready
         run: |
-          echo "Waiting for Postgres..."
-          until pg_isready -h postgres -p 5432; do
-            echo "Postgres not ready yet, sleeping 5 seconds..."
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL to be ready..."
             sleep 5
           done
-          echo "Postgres is ready!"
+
+      - name: Install Dependencies
+        run: npm install
 
       - name: Run Tests
         run: npm test
 
       - name: Build Application Artifact
         run: |
+          # Run your build command; it must produce a file named "webapp.zip" at the repository root.
           npm run build
           ls -l webapp.zip
 
@@ -72,7 +66,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: webapp-zip
           path: .
