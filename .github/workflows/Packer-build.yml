@@ -100,4 +100,4 @@ jobs:
             -var "instance_type=${PACKER_INSTANCE_TYPE}" \
             -var "ami_name=${PACKER_AMI_NAME}" \
             -var "aws_region=${AWS_REGION}" \
-            csye-6225-aws.pkr.hcl
+            csye-6225.pkr.hcl
