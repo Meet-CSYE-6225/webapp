@@ -105,15 +105,13 @@ jobs:
       - name: List Repository Files
         run: ls -la
 
-      # Write the GCP credentials file using printf to preserve formatting.
-      - name: Write GCP Credentials File
+      # Write and validate the GCP credentials file using jq.
+      - name: Write and Validate GCP Credentials File
         run: |
-          # Use '%b' to correctly interpret escape sequences in the secret.
-          printf '%b' "${{ secrets.GCP_SA_KEY }}" > gcp-key.json
-
-      # Validate that the credentials file is valid JSON.
-      - name: Validate GCP Credentials JSON
-        run: jq empty gcp-key.json
+          # Pipe the secret through jq so that it’s properly parsed and written to file.
+          echo "${{ secrets.GCP_SA_KEY }}" | jq . > gcp-key.json
+          echo "GCP credentials JSON created successfully:"
+          head -n 5 gcp-key.json
 
       - name: Build Custom Image with Packer
         run: |
