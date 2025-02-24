@@ -33,7 +33,7 @@ variable "instance_type" {
 
 variable "ami_name" {
   type        = string
-  default     = "csye6225-ami1"
+  default     = "csye6225-ami1-try"
   description = "Custom AMI name to be created"
 }
 
