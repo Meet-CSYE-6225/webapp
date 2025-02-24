@@ -10,6 +10,7 @@ jobs:
   build-artifact:
     runs-on: ubuntu-latest
     env:
+      # DATABASE_URL uses the secret for the host port.
       DATABASE_URL: postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
     services:
       postgres:
@@ -68,14 +69,6 @@ jobs:
       PACKER_AMI_NAME: ${{ secrets.PACKER_AMI_NAME }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
       ARTIFACT_PATH: ${{ secrets.ARTIFACT_PATH }}
-      # GCP environment variables (stored as GitHub secrets)
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_ZONE: ${{ secrets.GCP_ZONE }}
-      GCP_MACHINE_TYPE: ${{ secrets.GCP_MACHINE_TYPE }}
-      GCP_IMAGE_NAME: ${{ secrets.GCP_IMAGE_NAME }}
-      GCP_SOURCE_IMAGE_FAMILY: ${{ secrets.GCP_SOURCE_IMAGE_FAMILY }}
-      GCP_SOURCE_IMAGE_PROJECT_ID: ${{ secrets.GCP_SOURCE_IMAGE_PROJECT_ID }}
-      GCP_DISK_TYPE: ${{ secrets.GCP_DISK_TYPE }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -96,8 +89,9 @@ jobs:
       - name: Setup GCP CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+          export_default_credentials: true
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
@@ -105,32 +99,15 @@ jobs:
       - name: List Repository Files
         run: ls -la
 
-      # Write and validate the GCP credentials file using jq.
-      - name: Write and Validate GCP Credentials File
+      - name: Build Custom Images with Packer
         run: |
-          # Pipe the secret through jq so that it’s properly parsed and written to file.
-          echo "${{ secrets.GCP_SA_KEY }}" | jq . > gcp-key.json
-          echo "GCP credentials JSON created successfully:"
-          head -n 5 gcp-key.json
-
-      - name: Build Custom Image with Packer
-        run: |
-          # Set the environment variable so the Google provider can find the credentials.
-          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/gcp-key.json
-          echo "Checking that gcp-key.json exists:"
-          ls -la $(pwd)/gcp-key.json
           packer init .
           packer validate csye-6225.pkr.hcl
           packer build \
             -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" \
-            -var "instance_type=${{ secrets.PACKER_INSTANCE_TYPE }}" \
-            -var "ami_name=${{ secrets.PACKER_AMI_NAME }}" \
-            -var "aws_region=${{ secrets.AWS_REGION }}" \
+            -var "instance_type=${PACKER_INSTANCE_TYPE}" \
+            -var "ami_name=${PACKER_AMI_NAME}" \
+            -var "aws_region=${AWS_REGION}" \
             -var "gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
             -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
-            -var "gcp_machine_type=${{ secrets.GCP_MACHINE_TYPE }}" \
-            -var "gcp_image_name=${{ secrets.GCP_IMAGE_NAME }}" \
-            -var "gcp_source_image_family=${{ secrets.GCP_SOURCE_IMAGE_FAMILY }}" \
-            -var "gcp_source_image_project_id=${{ secrets.GCP_SOURCE_IMAGE_PROJECT_ID }}" \
-            -var "gcp_disk_type=${{ secrets.GCP_DISK_TYPE }}" \
             csye-6225.pkr.hcl
