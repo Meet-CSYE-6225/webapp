@@ -104,7 +104,7 @@ variable "ssh_timeout" {
 # --- GCP Variables ---
 variable "gcp_project_id" {
   type        = string
-  default     = "trydev-451920" 
+  default     = "trydev-451920"
   description = "GCP project ID"
 }
 
