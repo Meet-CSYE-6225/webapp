@@ -4,6 +4,10 @@ packer {
       version = ">= 1.0.0"
       source  = "github.com/hashicorp/amazon"
     }
+    googlecompute = {
+      version = ">= 1.0.0"
+      source  = "github.com/hashicorp/googlecompute"
+    }
   }
 }
 
@@ -28,13 +32,13 @@ variable "artifact_destination" {
 variable "instance_type" {
   type        = string
   default     = "t2.micro"
-  description = "EC2 instance type for the build"
+  description = "EC2 instance type for the build (AWS)"
 }
 
 variable "ami_name" {
   type        = string
   default     = "csye6225-ami1-try"
-  description = "Custom AMI name to be created"
+  description = "Custom AMI name to be created (AWS)"
 }
 
 variable "aws_region" {
@@ -46,25 +50,25 @@ variable "aws_region" {
 variable "ubuntu_image_filter" {
   type        = string
   default     = "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"
-  description = "AMI filter for the Ubuntu image"
+  description = "AMI filter for the Ubuntu image (AWS)"
 }
 
 variable "virtualization_type" {
   type        = string
   default     = "hvm"
-  description = "Virtualization type for the AMI"
+  description = "Virtualization type for the AMI (AWS)"
 }
 
 variable "root_device_type" {
   type        = string
   default     = "ebs"
-  description = "Root device type for the AMI"
+  description = "Root device type for the AMI (AWS)"
 }
 
 variable "amazon_ami_owner" {
   type        = string
   default     = "099720109477"
-  description = "Owner ID for the Ubuntu AMI"
+  description = "Owner ID for the Ubuntu AMI (AWS)"
 }
 
 variable "ssh_username" {
@@ -76,13 +80,13 @@ variable "ssh_username" {
 variable "volume_size" {
   type        = number
   default     = 25
-  description = "EBS volume size in GB"
+  description = "Disk size in GB"
 }
 
 variable "volume_type" {
   type        = string
   default     = "gp2"
-  description = "EBS volume type"
+  description = "EBS volume type (AWS)"
 }
 
 variable "provision_script" {
@@ -96,6 +100,50 @@ variable "ssh_timeout" {
   default     = "5m"
   description = "Timeout for SSH to become available"
 }
+
+# -----------------------
+# GCP-SPECIFIC VARIABLES
+# -----------------------
+variable "gcp_project_id" {
+  type        = string
+  description = "GCP Project ID"
+}
+
+variable "gcp_zone" {
+  type        = string
+  default     = "us-east4-a"
+  description = "GCP Zone"
+}
+
+variable "gcp_machine_type" {
+  type        = string
+  default     = "e2-micro"
+  description = "GCP machine type"
+}
+
+variable "gcp_image_name" {
+  type        = string
+  default     = "csye6225-gcp-image"
+  description = "Name for the GCP custom image"
+}
+
+variable "gcp_source_image_family" {
+  type        = string
+  description = "GCP source image family"
+}
+
+variable "gcp_source_image_project_id" {
+  type        = string
+  description = "GCP source image project id"
+}
+
+variable "gcp_disk_type" {
+  type        = string
+  description = "GCP disk type"
+}
+
+
+# AWS 
 
 source "amazon-ebs" "ubuntu" {
   ami_name      = var.ami_name
@@ -120,9 +168,26 @@ source "amazon-ebs" "ubuntu" {
   }
 }
 
+
+# GCP BUILDER CONFIGURATION (Source)
+
+source "googlecompute" "ubuntu" {
+  project_id              = var.gcp_project_id
+  zone                    = var.gcp_zone
+  machine_type            = var.gcp_machine_type
+  image_name              = var.gcp_image_name
+  source_image_family     = var.gcp_source_image_family
+  source_image_project_id = var.gcp_source_image_project_id
+  ssh_username            = var.ssh_username
+  disk_size               = var.volume_size
+  disk_type               = var.gcp_disk_type
+}
+
+
 build {
   sources = [
-    "source.amazon-ebs.ubuntu"
+    "source.amazon-ebs.ubuntu",
+    "source.googlecompute.ubuntu"
   ]
 
   # Create the destination directory and adjust its ownership
@@ -146,4 +211,3 @@ build {
     execute_command = "sudo ARTIFACT_PATH=${var.artifact_destination} bash {{ .Path }}"
   }
 }
-

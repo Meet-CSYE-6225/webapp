@@ -10,7 +10,6 @@ jobs:
   build-artifact:
     runs-on: ubuntu-latest
     env:
-      # DATABASE_URL uses the secret for the host port.
       DATABASE_URL: postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
     services:
       postgres:
@@ -24,7 +23,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        # The container always listens on 5432, so this must be literal.
         ports:
           - "5432:5432"
     steps:
@@ -45,7 +43,6 @@ jobs:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_HOST: "localhost"
-          # Use the host port secret here as well.
           DB_PORT: ${{ secrets.DB_PORT }}
           PORT: "8080"
           NODE_ENV: test
@@ -71,6 +68,14 @@ jobs:
       PACKER_AMI_NAME: ${{ secrets.PACKER_AMI_NAME }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
       ARTIFACT_PATH: ${{ secrets.ARTIFACT_PATH }}
+      # GCP environment variables (stored as GitHub secrets)
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_ZONE: ${{ secrets.GCP_ZONE }}
+      GCP_MACHINE_TYPE: ${{ secrets.GCP_MACHINE_TYPE }}
+      GCP_IMAGE_NAME: ${{ secrets.GCP_IMAGE_NAME }}
+      GCP_SOURCE_IMAGE_FAMILY: ${{ secrets.GCP_SOURCE_IMAGE_FAMILY }}
+      GCP_SOURCE_IMAGE_PROJECT_ID: ${{ secrets.GCP_SOURCE_IMAGE_PROJECT_ID }}
+      GCP_DISK_TYPE: ${{ secrets.GCP_DISK_TYPE }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -88,6 +93,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Setup GCP CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
 
@@ -103,4 +114,11 @@ jobs:
             -var "instance_type=${PACKER_INSTANCE_TYPE}" \
             -var "ami_name=${PACKER_AMI_NAME}" \
             -var "aws_region=${AWS_REGION}" \
+            -var "gcp_project_id=${GCP_PROJECT_ID}" \
+            -var "gcp_zone=${GCP_ZONE}" \
+            -var "gcp_machine_type=${GCP_MACHINE_TYPE}" \
+            -var "gcp_image_name=${GCP_IMAGE_NAME}" \
+            -var "gcp_source_image_family=${GCP_SOURCE_IMAGE_FAMILY}" \
+            -var "gcp_source_image_project_id=${GCP_SOURCE_IMAGE_PROJECT_ID}" \
+            -var "gcp_disk_type=${GCP_DISK_TYPE}" \
             csye-6225.pkr.hcl
