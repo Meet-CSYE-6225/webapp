@@ -94,7 +94,7 @@ jobs:
       - name: Build Custom Image with Packer
         run: |
           packer init .
-          packer validate csye-6225-aws.pkr.hcl
+          packer validate csye-6225.pkr.hcl
           packer build \
             -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" \
             -var "instance_type=${PACKER_INSTANCE_TYPE}" \
