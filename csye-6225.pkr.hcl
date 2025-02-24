@@ -47,7 +47,6 @@ variable "ssh_timeout" {
   description = "Timeout for SSH to become available"
 }
 
-
 # AWS
 
 variable "instance_type" {
@@ -104,12 +103,11 @@ variable "volume_type" {
   description = "EBS volume type (AWS)"
 }
 
-
-#
+# GCP
 
 variable "gcp_project_id" {
   type        = string
-  default     = "trydev-451920"  
+  default     = "trydev-451920"
   description = "GCP Project ID"
 }
 
@@ -149,7 +147,6 @@ variable "gcp_disk_type" {
   description = "GCP disk type"
 }
 
-
 # AWS Source
 
 source "amazon-ebs" "ubuntu" {
@@ -175,7 +172,6 @@ source "amazon-ebs" "ubuntu" {
   }
 }
 
-
 # GCP Source
 
 source "googlecompute" "ubuntu" {
@@ -184,12 +180,11 @@ source "googlecompute" "ubuntu" {
   machine_type            = var.gcp_machine_type
   image_name              = var.gcp_image_name
   source_image_family     = var.gcp_source_image_family
-  source_image_project_id = var.gcp_source_image_project_id
+  source_image_project_id = [var.gcp_source_image_project_id]  # Wrapped in a list to match expected type
   ssh_username            = var.ssh_username
   disk_size               = var.volume_size
   disk_type               = var.gcp_disk_type
 }
-
 
 build {
   sources = [
