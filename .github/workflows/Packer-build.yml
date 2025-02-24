@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build-artifact:
@@ -38,31 +39,16 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Wait for PostgreSQL Service
-        run: |
-          echo "Waiting for PostgreSQL to be ready..."
-          until pg_isready -h $DB_HOST -p $DB_PORT; do
-            echo "PostgreSQL is not ready yet. Sleeping for 5 seconds..."
-            sleep 5
-          done
-          echo "PostgreSQL is up and running."
-
       - name: Install Dependencies
         run: npm install
-
-      - name: Verify DB_PASSWORD Type
-        run: |
-          echo "DB_PASSWORD type:"
-          node -e "console.log(typeof process.env.DB_PASSWORD)"
-        env:
-          DB_PASSWORD: ${{ env.DB_PASSWORD }}
 
       - name: Run Tests
         run: npm test
 
       - name: Build Application Artifact
         run: |
-          npm run build
+          echo "Creating zip artifact"
+          zip -r webapp.zip . -x "node_modules/*" ".git/*"
           ls -l webapp.zip
 
       - name: Upload Artifact
@@ -97,15 +83,11 @@ jobs:
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
 
-      - name:  List Repository Files
+      - name: List Repository Files
         run: ls -la
 
       - name: Build Custom Image with Packer
         run: |
           packer init .
           packer validate csye-6225-aws.pkr.hcl
-          packer build \
-            -var "artifact_path=webapp.zip" \
-            -var "instance_type=${PACKER_INSTANCE_TYPE}" \
-            -var "ami_name=${PACKER_AMI_NAME}" \
-            csye-6225-aws.pkr.hcl
+          packer build -var "artifact_path=webapp.zip" -var "instance_type=${PACKER_INSTANCE_TYPE}" -var "ami_name=${PACKER_AMI_NAME}" csye-6225-aws.pkr.hcl
