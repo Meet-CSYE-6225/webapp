@@ -29,6 +29,27 @@ variable "artifact_destination" {
   description = "Full destination path on the instance for the artifact"
 }
 
+variable "ssh_username" {
+  type        = string
+  default     = "ubuntu"
+  description = "SSH username for the instance"
+}
+
+variable "provision_script" {
+  type        = string
+  default     = "init-app.sh"
+  description = "Path to the provisioning script"
+}
+
+variable "ssh_timeout" {
+  type        = string
+  default     = "5m"
+  description = "Timeout for SSH to become available"
+}
+
+
+# AWS
+
 variable "instance_type" {
   type        = string
   default     = "t2.micro"
@@ -71,12 +92,6 @@ variable "amazon_ami_owner" {
   description = "Owner ID for the Ubuntu AMI (AWS)"
 }
 
-variable "ssh_username" {
-  type        = string
-  default     = "ubuntu"
-  description = "SSH username for the instance"
-}
-
 variable "volume_size" {
   type        = number
   default     = 25
@@ -89,23 +104,12 @@ variable "volume_type" {
   description = "EBS volume type (AWS)"
 }
 
-variable "provision_script" {
-  type        = string
-  default     = "init-app.sh"
-  description = "Path to the provisioning script"
-}
 
-variable "ssh_timeout" {
-  type        = string
-  default     = "5m"
-  description = "Timeout for SSH to become available"
-}
+#
 
-# -----------------------
-# GCP-SPECIFIC VARIABLES
-# -----------------------
 variable "gcp_project_id" {
   type        = string
+  default     = "your-gcp-project-id"  # Replace or override via secrets
   description = "GCP Project ID"
 }
 
@@ -129,21 +133,24 @@ variable "gcp_image_name" {
 
 variable "gcp_source_image_family" {
   type        = string
+  default     = "ubuntu-2404-lts"
   description = "GCP source image family"
 }
 
 variable "gcp_source_image_project_id" {
   type        = string
+  default     = "ubuntu-os-cloud"
   description = "GCP source image project id"
 }
 
 variable "gcp_disk_type" {
   type        = string
+  default     = "pd-standard"
   description = "GCP disk type"
 }
 
 
-# AWS 
+# AWS Source
 
 source "amazon-ebs" "ubuntu" {
   ami_name      = var.ami_name
@@ -169,7 +176,7 @@ source "amazon-ebs" "ubuntu" {
 }
 
 
-# GCP BUILDER CONFIGURATION (Source)
+# GCP Source
 
 source "googlecompute" "ubuntu" {
   project_id              = var.gcp_project_id
@@ -205,7 +212,6 @@ build {
     generated   = true
   }
 
-  # Run the provisioning script with sudo and inject ARTIFACT_PATH into the command
   provisioner "shell" {
     script          = var.provision_script
     execute_command = "sudo ARTIFACT_PATH=${var.artifact_destination} bash {{ .Path }}"
