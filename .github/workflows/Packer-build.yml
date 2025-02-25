@@ -1,7 +1,7 @@
 name: Build Artifact and Run Packer
 
 on:
-  pull_request:
+  push:
     branches:
       - main
   workflow_dispatch:
