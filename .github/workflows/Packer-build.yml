@@ -94,9 +94,14 @@ jobs:
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
 
-
       - name: Build Custom Images with Packer
         run: |
+          # Confirm the credentials file exists
+          echo "GOOGLE_APPLICATION_CREDENTIALS is set to: $HOME/gcloud.json"
+          ls -l $HOME/gcloud.json
+          # Export the variable so Packer can pick it up
+          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud.json
+          
           packer init .
           packer validate csye-6225.pkr.hcl
           packer build \
