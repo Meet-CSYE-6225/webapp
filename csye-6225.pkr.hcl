@@ -169,6 +169,7 @@ build {
     "source.googlecompute.ubuntu"
   ]
 
+  # Create the destination directory and adjust its ownership
   provisioner "shell" {
     inline = [
       "sudo mkdir -p ${var.artifact_dest_dir}",
