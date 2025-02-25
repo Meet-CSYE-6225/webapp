@@ -96,18 +96,4 @@ jobs:
       - name: List Repository Files
         run: ls -la
 
-      - name: Build Custom Images with Packer
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
-        run: |
-          echo "Using GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
-          packer init .
-          packer validate csye-6225.pkr.hcl
-          packer build \
-            -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" \
-            -var "instance_type=${PACKER_INSTANCE_TYPE}" \
-            -var "ami_name=${PACKER_AMI_NAME}" \
-            -var "aws_region=${AWS_REGION}" \
-            -var "gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
-            -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
-            csye-6225.pkr.hcl
+      
