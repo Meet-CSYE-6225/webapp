@@ -85,23 +85,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
       - name: Setup GCP CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
-          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
-          export_default_credentials: true
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
 
       - name: Build Custom Images with Packer
         run: |
-          # Confirm the credentials file exists
-          echo "GOOGLE_APPLICATION_CREDENTIALS is set to: $HOME/gcloud.json"
-          ls -l $HOME/gcloud.json
-          # Export the variable so Packer can pick it up
-          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud.json
-          
+          echo "GOOGLE_APPLICATION_CREDENTIALS is set to: $GOOGLE_APPLICATION_CREDENTIALS"
+          ls -l $GOOGLE_APPLICATION_CREDENTIALS
           packer init .
           packer validate csye-6225.pkr.hcl
           packer build \
