@@ -60,10 +60,10 @@ fi
 # Deploy app to /opt/csye6225
 sudo mkdir -p /opt/csye6225
 # Unzip the app
-sudo unzip "/root/webapp-fork.zip" -d /opt/csye6225
+sudo unzip "/root/webapp.zip" -d /opt/csye6225
 
-if [ -d "/opt/csye6225/webapp-fork 2" ]; then
-    sudo mv "/opt/csye6225/webapp-fork 2" /opt/csye6225/webapp-fork
+if [ -d "/opt/csye6225/webapp" ]; then
+    sudo mv "/opt/csye6225/webapp" /opt/csye6225/webapp
 fi
 
 # Set ownership and permissions
@@ -75,7 +75,7 @@ curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt install nodejs -y
 
 # Change directory to the app folder
-cd /opt/csye6225/webapp-fork || { echo "Directory /opt/csye6225/webapp-fork not found. Exiting."; exit 1; }
+cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exiting."; exit 1; }
 
 
 
@@ -83,6 +83,6 @@ cd /opt/csye6225/webapp-fork || { echo "Directory /opt/csye6225/webapp-fork not 
 
 
 # Create environment variables file (.env)
-echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=10.116.0.3\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
+echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=localhost\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
 
 echo "Setup completed successfully!"
