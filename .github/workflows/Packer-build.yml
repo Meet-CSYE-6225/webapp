@@ -1,0 +1,114 @@
+name: Build Artifact and Run Packer
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-artifact:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - "5432:5432"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: "localhost"
+          DB_PORT: ${{ secrets.DB_PORT }}
+          PORT: "8080"
+          NODE_ENV: test
+        run: npm test
+
+      - name: Build Application Artifact
+        run: |
+          echo "Creating zip artifact..."
+          zip -r "${{ secrets.ARTIFACT_PATH }}" . -x "node_modules/*" ".git/*"
+          ls -l "${{ secrets.ARTIFACT_PATH }}"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp-zip
+          path: ${{ secrets.ARTIFACT_PATH }}
+
+  packer-build:
+    runs-on: ubuntu-latest
+    needs: build-artifact
+    env:
+      PACKER_INSTANCE_TYPE: ${{ secrets.PACKER_INSTANCE_TYPE }}
+      PACKER_AMI_NAME: ${{ secrets.PACKER_AMI_NAME }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ARTIFACT_PATH: ${{ secrets.ARTIFACT_PATH }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp-zip
+          path: .
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Setup GCP CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@v2
+
+      - name: Build Custom Images with Packer
+        run: |
+          echo "GOOGLE_APPLICATION_CREDENTIALS is set to: $GOOGLE_APPLICATION_CREDENTIALS"
+          ls -l $GOOGLE_APPLICATION_CREDENTIALS
+          packer init .
+          packer validate csye-6225.pkr.hcl
+          packer build \
+            -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" \
+            -var "instance_type=${PACKER_INSTANCE_TYPE}" \
+            -var "ami_name=${{ secrets.PACKER_AMI_NAME }}" \
+            -var "aws_region=${{ secrets.AWS_REGION }}" \
+            -var "gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
+            csye-6225.pkr.hcl
