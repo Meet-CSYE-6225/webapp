@@ -1,0 +1,19 @@
+[Unit]
+Description=CSYE6225 Web Application
+After=network.target
+
+[Service]
+User=csye6225
+Group=csye6225
+WorkingDirectory=/opt/webapp
+ExecStart=/usr/bin/node app.js
+Restart=always
+EnvironmentFile=/opt/webapp/.env
+
+[Install]
+WantedBy=multi-user.target
+
+# Reload systemd and enable/start service
+sudo systemctl daemon-reload
+sudo systemctl enable csye6225.service
+sudo systemctl start csye6225.service
