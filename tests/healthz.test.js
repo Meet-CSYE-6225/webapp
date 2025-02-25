@@ -54,7 +54,7 @@ describe('Health Check API Tests', function() {
       request(app)
         .get('/healthz')
         .expect('Cache-Control', 'no-cache')
-        .expect(200, done);
+        .expect(201, done);
     });
 
     it('should return 405 for a PUT request to /healthz', function(done) {
