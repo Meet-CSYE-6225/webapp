@@ -89,6 +89,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
         with:
           service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+          export_default_credentials: true
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
@@ -101,8 +102,8 @@ jobs:
           packer build \
             -var "artifact_path=${{ secrets.ARTIFACT_PATH }}" \
             -var "instance_type=${PACKER_INSTANCE_TYPE}" \
-            -var "ami_name=${{secrets.PACKER_AMI_NAME}}" \
-            -var "aws_region=${{secrets.AWS_REGION}}" \
-            -var "gcp_project_id=${{ secrets.GCP_PROJECT_ID}}" \
-            -var "gcp_zone=${{ secrets.GCP_ZONE}}" \
+            -var "ami_name=${{ secrets.PACKER_AMI_NAME }}" \
+            -var "aws_region=${{ secrets.AWS_REGION }}" \
+            -var "gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
             csye-6225.pkr.hcl
