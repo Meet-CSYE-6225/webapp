@@ -195,8 +195,8 @@ build {
 
   # Upload the  file
   provisioner "file" {
-    source      = "./"
-    destination = "/opt/csye6225/webapp/"
+    source      = "{{ user `artifact_path` }}"
+    destination = "/root/"
   }
 
 
