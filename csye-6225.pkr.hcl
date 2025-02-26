@@ -133,7 +133,7 @@ variable "DB_USER"{
 }
 variable "DB_HOST"{
   type = string
-  default = localhost
+  default = "localhost"
 }
 variable "DB_PASSWORD"{
   type = string
