@@ -188,9 +188,9 @@ build {
     "source.amazon-ebs.ubuntu",
     "source.googlecompute.ubuntu"
   ]
-  provisioner "shell" {
-    inline = ["sudo mkdir -p /opt/csye/webapp"]
-  }
+  # provisioner "shell" {
+  #   inline = ["sudo mkdir -p /opt/csye6225/webapp"]
+  # }
   # Create the destination directory
   provisioner "shell" {
     inline = [
@@ -201,7 +201,7 @@ build {
   # Upload the artifact file to the destination directory (using artifact_destination)
   provisioner "file" {
     source      = "./"
-    destination = "/opt/csye/webapp"
+    destination = "/opt/csye6225/webapp"
   }
 
 
