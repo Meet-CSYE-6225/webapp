@@ -202,6 +202,7 @@ build {
   provisioner "file" {
     source      = "./"
     destination = "/opt/csye6225/webapp"
+    generated = true
   }
 
 
