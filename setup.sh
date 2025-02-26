@@ -10,7 +10,7 @@ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dea
 echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
 # Install PostgreSQL and unzip
-sudo apt update && sudo apt install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm
+sudo apt update && sudo apt install -y postgresql-16 postgresql-contrib-16 unzip curl nodejs npm
 cd /tmp
 # Start and enable PostgreSQL
 sudo systemctl start postgresql
