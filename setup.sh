@@ -1,65 +1,52 @@
 #!/bin/bash
-set -e
 export DEBIAN_FRONTEND=noninteractive
 
-# Ensure commands running as postgres have a proper HOME.
-export HOME=/root
-sudo mkdir -p /var/lib/apt/lists/partial
-sudo apt-get clean
-
-# Ensure /home/ubuntu exists with proper permissions
-sudo mkdir -p /home/ubuntu
-sudo chown ubuntu:ubuntu /home/ubuntu
-sudo chmod 755 /home/ubuntu
 # Update packages
 sudo apt update -y
 sudo apt upgrade -y
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgresql.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
-# Add PostgreSQL repository key and source list
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-  gpg --dearmor | sudo tee /usr/share/keyrings/postgresql.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
-  sudo tee /etc/apt/sources.list.d/pgdg.list
+# Install PostgreSQL and unzip
+sudo apt update && sudo apt install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm
 
-# Install PostgreSQL 14, its contrib package, unzip, curl, nodejs, and npm
-sudo apt update
-sudo apt install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm
-
-# Start and enable PostgreSQL service (using PGDG naming for version 14)
-sudo systemctl start postgresql@14-main
-sudo systemctl enable postgresql@14-main
+# Start and enable PostgreSQL
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
 
 # Update PostgreSQL configuration for remote connections
+# Set listen_addresses to '*' in postgresql.conf
 sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/14/main/postgresql.conf
 
-# Add a rule to pg_hba.conf (using sudo so we have permissions)
-sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/14/main/pg_hba.conf || \
-  echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/14/main/pg_hba.conf
+# Add a rule to pg_hba.conf 
+grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/14/main/pg_hba.conf || \
+    echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/14/main/pg_hba.conf
 
 # Restart PostgreSQL to apply configuration changes
-sudo systemctl restart postgresql@14-main
+sudo systemctl restart postgresql
 
-# Check if the database 'health_check_db' exists; if not, create it
-DB_EXISTS=$(sudo -H -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='health_check_db'")
+# Check if the database 'health_check_db' exists: if not, create it
+DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='health_check_db'")
 if [ "$DB_EXISTS" != "1" ]; then
-    sudo -H -u postgres psql -c "CREATE DATABASE health_check_db;"
+    sudo -u postgres psql -c "CREATE DATABASE health_check_db;"
 else
-    echo "Database 'health_check_db' already exists, skipping creation."
+    echo "Database 'health_check_db' already exists, Skipping creation"
 fi
 
-# Check if the user 'meet' exists; if not, create it
-USER_EXISTS=$(sudo -H -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='meet'")
+# Check if the user 'meet' exists; if not: create it
+USER_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='meet'")
 if [ "$USER_EXISTS" != "1" ]; then
-    sudo -H -u postgres psql -c "CREATE USER meet WITH PASSWORD 'Root@123';"
+    sudo -u postgres psql -c "CREATE USER meet WITH PASSWORD 'Root@123';"
 else
-    echo "User 'meet' already exists, skipping creation."
+    echo "User 'meet' already exists, Skipping creation."
 fi
 
-# Grant privileges on the database to user 'meet'
-sudo -H -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO meet;"
+# Grant privileges on the database to the user meet
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO meet;"
 
-# Grant schema-level privileges for user 'meet'
-sudo -H -u postgres psql -d health_check_db <<'EOF'
+# Grant schema-level privileges 
+sudo -u postgres psql -d health_check_db <<'EOF'
+GRANT ALL ON SCHEMA public TO health_check_db;
 GRANT ALL ON SCHEMA public TO meet;
 GRANT CREATE ON SCHEMA public TO meet;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO meet;
@@ -75,36 +62,32 @@ fi
 
 # Deploy app to /opt/csye6225
 sudo mkdir -p /opt/csye6225
-
-# Check that the webapp artifact exists before unzipping
-if [ ! -f "/root/webapp.zip" ]; then
-    echo "Error: /root/webapp.zip not found. Exiting."
-    exit 1
-fi
-
 # Unzip the app
-sudo unzip "/webapp.zip" -d /opt/csye6225
+sudo unzip "/root/webapp.zip" -d /opt/csye6225
 
 if [ -d "/opt/csye6225/webapp" ]; then
     sudo mv "/opt/csye6225/webapp" /opt/csye6225/webapp
 fi
 
-# Set ownership and permissions for the deployed app
+# Set ownership and permissions
 sudo chown -R csye6225user:csye6225app /opt/csye6225
 sudo chmod -R 755 /opt/csye6225
 
-# Install Node.js (if not already installed) and dependencies
+# Install Node.js 
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo apt install nodejs -y
 
-# Change directory to the app folder and install Node modules
+# Change directory to the app folder
 cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exiting."; exit 1; }
-npm install
+
+
+
+    npm install
+
 
 # Create environment variables file (.env)
 echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=localhost\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
-
-# Create and enable the systemd service for the app if it does not exist
+# systemd service
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
 sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
 [Unit]
@@ -127,4 +110,5 @@ sudo systemctl daemon-reload
 sudo systemctl enable csye6225
 sudo systemctl start csye6225
 
+echo "* Setup complete! *"
 echo "Setup completed successfully!"
