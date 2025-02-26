@@ -189,14 +189,14 @@ build {
   # Create the destination directory
   provisioner "shell" {
     inline = [
-      "mkdir -p /tmp/webapp"
+      "mkdir -p /opt/csye6225/webapp"
     ]
   }
 
   # Upload the  file
   provisioner "file" {
     source      = "./"
-    destination = "/tmp/webapp/"
+    destination = "/opt/csye6225/webapp/"
   }
 
 
@@ -210,8 +210,8 @@ build {
       "DB_HOST=${var.DB_HOST}"
     ]
     inline = [
-      "chmod +x /tmp/webapp/setup.sh",
-      "/tmp/webapp/setup.sh"
+      "chmod +x /opt/csye6225/webapp/setup.sh",
+      "/opt/csye6225/webapp/setup.sh"
     ]
   }
 }
