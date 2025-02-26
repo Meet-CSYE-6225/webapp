@@ -101,31 +101,6 @@ variable "ssh_timeout" {
   description = "Timeout for SSH to become available"
 }
 
-# --- GCP Variables ---
-variable "gcp_project_id" {
-  type        = string
-  default     = "trydev-451920"
-  description = "GCP project ID"
-}
-
-variable "gcp_zone" {
-  type        = string
-  default     = "us-east1-b"
-  description = "GCP zone nearest to Boston"
-}
-
-variable "gcp_disk_type" {
-  type        = string
-  default     = "pd-ssd"
-  description = "Disk type for GCP"
-}
-
-variable "gcp_machine_type" {
-  type        = string
-  default     = "e2-micro"
-  description = "Machine type for GCP image building"
-}
-
 variable "DB_NAME" {
   type    = string
   default = "health_check_db"
@@ -170,35 +145,38 @@ source "amazon-ebs" "ubuntu" {
   }
 }
 
-# --- GCP Builder ---
+# --- Google Compute Builder (if needed) ---
 source "googlecompute" "ubuntu" {
-  project_id              = var.gcp_project_id
-  zone                    = var.gcp_zone
-  machine_type            = var.gcp_machine_type
+  project_id              = "trydev-451920"
+  zone                    = "us-east1-b"
+  machine_type            = "e2-micro"
   image_name              = var.ami_name
   source_image_family     = "ubuntu-2204-lts"
   source_image_project_id = ["ubuntu-os-cloud"]
   ssh_username            = var.ssh_username
   disk_size               = var.volume_size
-  disk_type               = var.gcp_disk_type
+  disk_type               = "pd-ssd"
 }
 
 build {
   name    = "custom-node-postgres-image"
   sources = ["source.amazon-ebs.ubuntu", "source.googlecompute.ubuntu"]
 
+  # Create the target directory with writable permissions.
   provisioner "shell" {
     inline = [
-      "sudo mkdir -p /opt/csye6225/try/webapp"
+      "sudo mkdir -p /opt/csye6225/try/webapp",
+      "sudo chown ${var.ssh_username}:${var.ssh_username} /opt/csye6225/try/webapp"
     ]
   }
 
-  # Copy the entire webapp directory to the target machine
+  # Upload the entire directory (which includes this template and your webapp files)
   provisioner "file" {
     source      = "./"
     destination = "/opt/csye6225/try/webapp/"
   }
 
+  # Run the setup script from the uploaded directory.
   provisioner "shell" {
     environment_vars = [
       "DB_NAME=${var.DB_NAME}",
@@ -207,8 +185,8 @@ build {
       "DB_HOST=${var.DB_HOST}"
     ]
     inline = [
-      "chmod +x /tmp/webapp/scripts/setup.sh",
-      "/tmp/webapp/scripts/setup.sh"
+      "chmod +x /opt/csye6225/try/webapp/setup.sh",
+      "sudo /opt/csye6225/try/webapp/setup.sh"
     ]
   }
 }
