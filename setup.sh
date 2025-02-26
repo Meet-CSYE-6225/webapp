@@ -1,6 +1,9 @@
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 
+# Change to a directory that is guaranteed to have proper permissions (e.g. /tmp)
+cd /tmp
+
 # Update packages in non-interactive mode
 sudo apt-get update -y < /dev/null
 sudo apt-get upgrade -y < /dev/null
@@ -20,7 +23,7 @@ sudo systemctl enable postgresql
 # Update PostgreSQL configuration for remote connections
 sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/14/main/postgresql.conf
 
-# Append rule to pg_hba.conf for remote connections (using sudo to ensure permissions)
+# Append rule to pg_hba.conf for remote connections (if not already present)
 sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/14/main/pg_hba.conf || \
     echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/14/main/pg_hba.conf
 
@@ -58,48 +61,41 @@ if ! getent group csye6225app > /dev/null; then
     sudo groupadd csye6225app
 fi
 if ! id -u csye6225user > /dev/null 2>&1; then
-    sudo useradd -s /bin/bash -g csye6225app -m csye6225user
+    sudo useradd -s /usr/sbin/nologin -g csye6225app -m csye6225user
 fi
 
-# Deploy app to /opt/csye6225
-sudo mkdir -p /opt/csye6225
-
-# Unzip the app archive if it exists
+# Deploy the web application to /opt/csye6225
+sudo mkdir -p /opt/csye6225/webapp
 if [ -f "/root/webapp.zip" ]; then
     sudo unzip "/root/webapp.zip" -d /opt/csye6225
 else
     echo "webapp.zip not found in /root. Exiting."
     exit 1
 fi
-
-# If the extracted folder isn’t named 'webapp', rename it as needed (adjust folder name accordingly)
+# Rename folder if necessary
 if [ -d "/opt/csye6225/webapp_extracted" ]; then
     sudo mv /opt/csye6225/webapp_extracted /opt/csye6225/webapp
 fi
 
-# Set ownership and permissions for the app directory
+# Set ownership and permissions for the application directory
 sudo chown -R csye6225user:csye6225app /opt/csye6225
 sudo chmod -R 755 /opt/csye6225
 
-# Install Node.js (using NodeSource setup)
+# Install Node.js dependencies (after setting up Node.js via NodeSource)
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs < /dev/null
-
-# Change directory to the application folder
 if [ -d "/opt/csye6225/webapp" ]; then
     cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exiting."; exit 1; }
 else
     echo "Application directory /opt/csye6225/webapp does not exist. Exiting."
     exit 1
 fi
-
-# Install Node.js dependencies
 npm install
 
-# Create environment variables file (.env)
+# Create an environment file (.env) for the application
 echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=localhost\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
 
-# Create a systemd service for the web application if it doesn't already exist
+# Create a systemd service file to start the application automatically on boot (if not already present)
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
     sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
 [Unit]
@@ -118,10 +114,10 @@ WantedBy=multi-user.target
 EOF
 fi
 
-# Reload systemd, enable, and start the service
+# Reload systemd and enable the service
 sudo systemctl daemon-reload
 sudo systemctl enable csye6225
 sudo systemctl start csye6225
 
-echo "* Setup complete! *"
+
 echo "Setup completed successfully!"
