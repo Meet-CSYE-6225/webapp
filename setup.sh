@@ -45,9 +45,9 @@ sudo chown -R csye6225:csye6225 /opt/csye6225 && sudo chmod -R 755 /opt/csye6225
 sudo tee /opt/csye6225/webapp/.env > /dev/null <<EOF
 DB_NAME=health_check_db
 DB_USER=meet
-DB_PASS=Root@123
+DB_PASSWORD=Root@123
 DB_HOST=localhost
-PORT=8080
+DB_PORT=8080
 EOF
 
 # systemd service
