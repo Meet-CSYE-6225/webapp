@@ -30,7 +30,7 @@ DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname=
 USER_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='meet'")
 [ "$USER_EXISTS" != "1" ] && sudo -u postgres psql -c "CREATE USER meet WITH PASSWORD 'Root@123';"
 
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_cehck_db TO meet;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO meet;"
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'Root@123';"
 
 # App user and group
