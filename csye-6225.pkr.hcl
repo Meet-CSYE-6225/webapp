@@ -200,10 +200,13 @@ build {
 
   # Upload the artifact file to the destination directory (using artifact_destination)
   provisioner "file" {
-    source      = "./"
-    destination = "/root/webapp.zip"
-    use_sudo    = true
+    source      = var.artifact_path
+    destination = "/home/ubuntu/webapp.zip"
     generated   = true
+  }
+
+  provisioner "shell" {
+    inline = ["sudo mv /home/ubuntu/webapp.zip /root/webapp.zip"]
   }
 
 
