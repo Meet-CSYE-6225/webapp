@@ -3,12 +3,12 @@ Description=CSYE6225 Web Application
 After=network.target
 
 [Service]
-User=csye6225user
-Group=csye6225app
-WorkingDirectory=/opt/csye6225/webapp
+User=csye6225
+Group=csye6225
+WorkingDirectory=/opt/webapp
 ExecStart=/usr/bin/node app.js
 Restart=always
-EnvironmentFile=/opt/csye6225/webapp/.env
+EnvironmentFile=/opt/webapp/.env
 
 [Install]
 WantedBy=multi-user.target
