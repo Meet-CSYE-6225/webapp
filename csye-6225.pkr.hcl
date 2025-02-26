@@ -125,22 +125,25 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
+
 variable "DB_NAME" {
   type    = string
   default = "health_check_db"
 }
+
 variable "DB_USER" {
   type    = string
   default = "meet"
 }
+
 variable "DB_HOST" {
   type    = string
   default = "localhost"
 }
+
 variable "DB_PASSWORD" {
   type    = string
   default = "password"
-
 }
 
 # --- AWS Builder ---
@@ -193,15 +196,13 @@ build {
     ]
   }
 
-  # Upload the  file
+  # Upload the artifact file to the destination directory (using artifact_destination)
   provisioner "file" {
     source      = "{{ user `artifact_path` }}"
-    destination = "/root/"
+    destination = "{{ user `artifact_destination` }}"
   }
 
-
-
-  # Run the provisioning script with sudo and inject ARTIFACT_PATH into the command
+  # Run the provisioning script 
   provisioner "shell" {
     environment_vars = [
       "DB_NAME=${var.DB_NAME}",
