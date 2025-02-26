@@ -1,18 +1,23 @@
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 
-# Change to a directory that is guaranteed to have proper permissions (e.g. /tmp)
+# Change to a directory with proper permissions
 cd /tmp
 
-# Update packages in non-interactive mode
+# Clean apt lists to fix GPG splitting errors
+sudo rm -rf /var/lib/apt/lists/*
+
+# Update and upgrade packages in non-interactive mode
 sudo apt-get update -y < /dev/null
 sudo apt-get upgrade -y < /dev/null
 
-# Add PostgreSQL APT repository and import the key
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgresql.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+# Add PostgreSQL APT repository and import its key
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+  gpg --dearmor | sudo tee /usr/share/keyrings/postgresql.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
+  sudo tee /etc/apt/sources.list.d/pgdg.list
 
-# Install PostgreSQL, unzip, curl, nodejs, and npm in non-interactive mode
+# Update package list again and install PostgreSQL and other dependencies
 sudo apt-get update -y < /dev/null
 sudo apt-get install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm < /dev/null
 
@@ -23,11 +28,11 @@ sudo systemctl enable postgresql
 # Update PostgreSQL configuration for remote connections
 sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/14/main/postgresql.conf
 
-# Append rule to pg_hba.conf for remote connections (if not already present)
+# Append rule to pg_hba.conf if not already present
 sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/14/main/pg_hba.conf || \
     echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/14/main/pg_hba.conf
 
-# Restart PostgreSQL to apply configuration changes
+# Restart PostgreSQL to apply changes
 sudo systemctl restart postgresql
 
 # Create database 'health_check_db' if it doesn't exist
@@ -46,17 +51,17 @@ else
     echo "User 'meet' already exists, skipping creation."
 fi
 
-# Grant privileges on the database to the user 'meet'
+# Grant privileges on the database to user 'meet'
 sudo -H -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO meet;"
 
-# Grant schema-level privileges for user 'meet'
+# Grant schema-level privileges
 sudo -H -u postgres psql -d health_check_db <<'EOF'
 GRANT ALL ON SCHEMA public TO meet;
 GRANT CREATE ON SCHEMA public TO meet;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO meet;
 EOF
 
-# Create app group and user if they do not exist
+# Create system group and user if not present
 if ! getent group csye6225app > /dev/null; then
     sudo groupadd csye6225app
 fi
@@ -64,26 +69,32 @@ if ! id -u csye6225user > /dev/null 2>&1; then
     sudo useradd -s /usr/sbin/nologin -g csye6225app -m csye6225user
 fi
 
-# Deploy the web application to /opt/csye6225
+# Deploy the web application artifact
 sudo mkdir -p /opt/csye6225/webapp
-if [ -f "/root/webapp.zip" ]; then
-    sudo unzip "/root/webapp.zip" -d /opt/csye6225
+
+# Use ARTIFACT_PATH env variable (default to /root/webapp.zip if not set)
+ARTIFACT_FILE=${ARTIFACT_PATH:-/root/webapp.zip}
+if [ -f "$ARTIFACT_FILE" ]; then
+    sudo unzip "$ARTIFACT_FILE" -d /opt/csye6225
 else
-    echo "webapp.zip not found in /root. Exiting"
+    echo "Artifact $ARTIFACT_FILE not found. Exiting."
     exit 1
 fi
+
 # Rename folder if necessary
 if [ -d "/opt/csye6225/webapp_extracted" ]; then
     sudo mv /opt/csye6225/webapp_extracted /opt/csye6225/webapp
 fi
 
-# Set ownership and permissions for the application directory
+# Set proper ownership and permissions
 sudo chown -R csye6225user:csye6225app /opt/csye6225
 sudo chmod -R 755 /opt/csye6225
 
-# Install Node.js dependencies (after setting up Node.js via NodeSource)
+# Install Node.js (if not already installed)
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs < /dev/null
+
+# Change to the application directory and install dependencies
 if [ -d "/opt/csye6225/webapp" ]; then
     cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exiting."; exit 1; }
 else
@@ -92,10 +103,10 @@ else
 fi
 npm install
 
-# Create an environment file (.env) for the application
+# Create environment file (.env) for the application
 echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=localhost\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
 
-# Create a systemd service file to start the application automatically on boot (if not already present)
+# Create systemd service for the application if not already present
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
     sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
 [Unit]
@@ -114,10 +125,10 @@ WantedBy=multi-user.target
 EOF
 fi
 
-# Reload systemd and enable the service
+# Reload systemd and start the service
 sudo systemctl daemon-reload
 sudo systemctl enable csye6225
 sudo systemctl start csye6225
 
-
+echo "* Setup complete! *"
 echo "Setup completed successfully!"
