@@ -11,23 +11,7 @@ packer {
   }
 }
 
-variable "artifact_path" {
-  type        = string
-  default     = "webapp.zip"
-  description = "Local path to the application artifact"
-}
 
-variable "artifact_dest_dir" {
-  type        = string
-  default     = "/opt/csye6225/webapp"
-  description = "Directory on the instance where the artifact will be stored"
-}
-
-variable "artifact_destination" {
-  type        = string
-  default     = "/opt/csye6225/webapp.zip"
-  description = "Full destination path on the instance for the artifact"
-}
 
 variable "instance_type" {
   type        = string
@@ -89,16 +73,33 @@ variable "volume_type" {
   description = "EBS volume type"
 }
 
-variable "provision_script" {
+
+
+
+
+# --- GCP Variables ---
+variable "gcp_project_id" {
   type        = string
-  default     = "init-app.sh"
-  description = "Path to the provisioning script"
+  default     = "trydev-451920"
+  description = "GCP project ID"
 }
 
-variable "ssh_timeout" {
+variable "gcp_zone" {
   type        = string
-  default     = "5m"
-  description = "Timeout for SSH to become available"
+  default     = "us-east1-b"
+  description = "GCP zone nearest to Boston"
+}
+
+variable "gcp_disk_type" {
+  type        = string
+  default     = "pd-ssd"
+  description = "Disk type for GCP"
+}
+
+variable "gcp_machine_type" {
+  type        = string
+  default     = "e2-micro"
+  description = "Machine type for GCP image building"
 }
 
 variable "DB_NAME" {
@@ -123,7 +124,8 @@ variable "DB_PASSWORD" {
 
 # --- AWS Builder ---
 source "amazon-ebs" "ubuntu" {
-  ami_name      = var.ami_name
+  profile = "dev"
+  ami_name      = "custom-node-postgres-app-{{timestamp}}"
   instance_type = var.instance_type
   region        = var.aws_region
   ssh_timeout   = var.ssh_timeout
@@ -136,7 +138,7 @@ source "amazon-ebs" "ubuntu" {
     owners      = [var.amazon_ami_owner]
     most_recent = true
   }
-  ssh_username = var.ssh_username
+  ssh_username = var.ubuntu
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = var.volume_size
@@ -145,38 +147,38 @@ source "amazon-ebs" "ubuntu" {
   }
 }
 
-# --- Google Compute Builder (if needed) ---
+# --- GCP Builder ---
 source "googlecompute" "ubuntu" {
-  project_id              = "trydev-451920"
-  zone                    = "us-east1-b"
-  machine_type            = "e2-micro"
-  image_name              = var.ami_name
+  project_id              = var.gcp_project_id
+  zone                    = var.gcp_zone
+  machine_type            = var.gcp_machine_type
+  image_name              = "custom-node-postgres-app-{{timestamp}}"
   source_image_family     = "ubuntu-2204-lts"
   source_image_project_id = ["ubuntu-os-cloud"]
-  ssh_username            = var.ssh_username
+  ssh_username            = packer
   disk_size               = var.volume_size
-  disk_type               = "pd-ssd"
+  disk_type               = var.gcp_disk_type
 }
 
 build {
-  name    = "custom-node-postgres-image"
-  sources = ["source.amazon-ebs.ubuntu", "source.googlecompute.ubuntu"]
-
-  # Create the target directory with writable permissions.
-  provisioner "shell" {
+  sources = [
+    "source.amazon-ebs.ubuntu",
+    "source.googlecompute.ubuntu"
+  ]
+  
+  # Create the destination directory
+   provisioner "shell" {
     inline = [
-      "sudo mkdir -p /opt/csye6225/try/webapp",
-      "sudo chown ${var.ssh_username}:${var.ssh_username} /opt/csye6225/try/webapp"
+      "mkdir -p /tmp/webapp"
     ]
   }
 
-  # Upload the entire directory (which includes this template and your webapp files)
+  # Copy the entire webapp directory to the target machine
   provisioner "file" {
     source      = "./"
-    destination = "/opt/csye6225/try/webapp/"
+    destination = "/tmp/webapp/"
   }
 
-  # Run the setup script from the uploaded directory.
   provisioner "shell" {
     environment_vars = [
       "DB_NAME=${var.DB_NAME}",
@@ -185,8 +187,9 @@ build {
       "DB_HOST=${var.DB_HOST}"
     ]
     inline = [
-      "chmod +x /opt/csye6225/try/webapp/setup.sh",
-      "sudo /opt/csye6225/try/webapp/setup.sh"
+      "chmod +x /tmp/webapp/setup.sh",
+      "/tmp/webapp/setup.sh"
     ]
   }
+
 }
