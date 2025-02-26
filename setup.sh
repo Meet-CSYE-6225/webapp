@@ -69,7 +69,7 @@ sudo mkdir -p /opt/csye6225/webapp
 if [ -f "/root/webapp.zip" ]; then
     sudo unzip "/root/webapp.zip" -d /opt/csye6225
 else
-    echo "webapp.zip not found in /root. Exiting."
+    echo "webapp.zip not found in /root. Exiting"
     exit 1
 fi
 # Rename folder if necessary
