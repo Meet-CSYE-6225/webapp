@@ -197,10 +197,10 @@ build {
   }
 
   # Upload the artifact file to the destination directory (using artifact_destination)
-provisioner "file" {
-  source      = "./"
-  destination = "/opt/csye/webapp"
-}
+  provisioner "file" {
+    source      = "./"
+    destination = "/opt/csye/webapp"
+  }
 
 
 
