@@ -1,16 +1,17 @@
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 
-# Update packages
-sudo apt update -y
-sudo apt upgrade -y
+# Update packages in non-interactive mode
+sudo apt-get update -y < /dev/null
+sudo apt-get upgrade -y < /dev/null
 
-# Add PostgreSQL APT Repository and key
+# Add PostgreSQL APT repository and import the key
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgresql.gpg > /dev/null
 echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
-# Install PostgreSQL and other required packages
-sudo apt update && sudo apt install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm
+# Install PostgreSQL, unzip, curl, nodejs, and npm in non-interactive mode
+sudo apt-get update -y < /dev/null
+sudo apt-get install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm < /dev/null
 
 # Start and enable PostgreSQL
 sudo systemctl start postgresql
@@ -19,7 +20,7 @@ sudo systemctl enable postgresql
 # Update PostgreSQL configuration for remote connections
 sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/14/main/postgresql.conf
 
-# Append rule to pg_hba.conf for remote connections (using sudo)
+# Append rule to pg_hba.conf for remote connections (using sudo to ensure permissions)
 sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/14/main/pg_hba.conf || \
     echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/14/main/pg_hba.conf
 
@@ -71,7 +72,7 @@ else
     exit 1
 fi
 
-# If the extracted folder isn't named 'webapp', rename it (adjust as necessary)
+# If the extracted folder isn’t named 'webapp', rename it as needed (adjust folder name accordingly)
 if [ -d "/opt/csye6225/webapp_extracted" ]; then
     sudo mv /opt/csye6225/webapp_extracted /opt/csye6225/webapp
 fi
@@ -80,11 +81,11 @@ fi
 sudo chown -R csye6225user:csye6225app /opt/csye6225
 sudo chmod -R 755 /opt/csye6225
 
-# Install Node.js (re-run NodeSource setup)
+# Install Node.js (using NodeSource setup)
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo apt-get install -y nodejs < /dev/null
 
-# Change directory to the app folder
+# Change directory to the application folder
 if [ -d "/opt/csye6225/webapp" ]; then
     cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exiting."; exit 1; }
 else
@@ -117,7 +118,7 @@ WantedBy=multi-user.target
 EOF
 fi
 
-# Reload systemd, enable and start the service
+# Reload systemd, enable, and start the service
 sudo systemctl daemon-reload
 sudo systemctl enable csye6225
 sudo systemctl start csye6225
