@@ -125,6 +125,19 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
+variable "DB_NAME"{
+  type = string
+}
+variable "DB_USER"{
+  type = string
+}
+variable "DB_HOST"{
+  type = string
+  default = localhost
+}
+variable "DB_PASSWORD"{
+  type = string
+}
 
 # --- AWS Builder ---
 source "amazon-ebs" "ubuntu" {
