@@ -185,7 +185,7 @@ build {
 
 
   # Run the provisioning script with sudo and inject ARTIFACT_PATH into the command
-provisioner "shell" {
+  provisioner "shell" {
     environment_vars = [
       "DB_NAME=${var.DB_NAME}",
       "DB_USER=${var.DB_USER}",
@@ -194,7 +194,7 @@ provisioner "shell" {
     ]
     inline = [
       "chmod +x /tmp/webapp/setup.sh",
-      "/tmp/webapp/scripts/setup.sh"
+      "/tmp/webapp/setup.sh"
     ]
   }
 }
