@@ -11,23 +11,23 @@ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
 echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
   sudo tee /etc/apt/sources.list.d/pgdg.list
 
-# Install PostgreSQL 16, its contrib package, unzip, curl, nodejs, and npm
+# Install PostgreSQL 14, its contrib package, unzip, curl, nodejs, and npm
 sudo apt update
-sudo apt install -y postgresql-16 postgresql-contrib-16 unzip curl nodejs npm
+sudo apt install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm
 
-# Start and enable PostgreSQL service (using the PGDG naming convention)
-sudo systemctl start postgresql@16-main
-sudo systemctl enable postgresql@16-main
+# Start and enable PostgreSQL service (using PGDG naming convention for version 14)
+sudo systemctl start postgresql@14-main
+sudo systemctl enable postgresql@14-main
 
 # Update PostgreSQL configuration for remote connections
-sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/16/main/postgresql.conf
+sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/14/main/postgresql.conf
 
 # Add a rule to pg_hba.conf (using sudo so we have permissions)
-sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/16/main/pg_hba.conf || \
-  echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/16/main/pg_hba.conf
+sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/14/main/pg_hba.conf || \
+  echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/14/main/pg_hba.conf
 
 # Restart PostgreSQL to apply configuration changes
-sudo systemctl restart postgresql@16-main
+sudo systemctl restart postgresql@14-main
 
 # Check if the database 'health_check_db' exists; if not, create it
 DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='health_check_db'")
@@ -66,11 +66,13 @@ fi
 # Deploy app to /opt/csye6225
 sudo mkdir -p /opt/csye6225
 
-# Ensure the webapp artifact exists before unzipping
+# Check that the webapp artifact exists before unzipping
 if [ ! -f "/root/webapp.zip" ]; then
     echo "Error: /root/webapp.zip not found. Exiting."
     exit 1
 fi
+
+# Unzip the app
 sudo unzip "/root/webapp.zip" -d /opt/csye6225
 
 if [ -d "/opt/csye6225/webapp" ]; then
