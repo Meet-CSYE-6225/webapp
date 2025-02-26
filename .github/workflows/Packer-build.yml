@@ -57,8 +57,16 @@ jobs:
             sleep 2
           done
 
-      - name: Run Tests
-       
+      - name: Run tests
+        env:
+            # These environment variables override .env values during the CI run.
+            DB_NAME: health_check_db
+            DB_USER: ${{ secrets.DB_USER }}
+            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+            DB_HOST: localhost
+            DB_PORT: 5432
+            PORT: 8080
+            NODE_ENV: test
         run: npm test
 
       - name: Build application artifact
