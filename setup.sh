@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Ensure commands running as postgres have a proper HOME.
+export HOME=/root
+
 # Update packages
 sudo apt update -y
 sudo apt upgrade -y
@@ -15,7 +18,7 @@ echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.o
 sudo apt update
 sudo apt install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm
 
-# Start and enable PostgreSQL service (using PGDG naming convention for version 14)
+# Start and enable PostgreSQL service (using PGDG naming for version 14)
 sudo systemctl start postgresql@14-main
 sudo systemctl enable postgresql@14-main
 
@@ -30,26 +33,26 @@ sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/14/main/p
 sudo systemctl restart postgresql@14-main
 
 # Check if the database 'health_check_db' exists; if not, create it
-DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='health_check_db'")
+DB_EXISTS=$(sudo -H -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='health_check_db'")
 if [ "$DB_EXISTS" != "1" ]; then
-    sudo -u postgres psql -c "CREATE DATABASE health_check_db;"
+    sudo -H -u postgres psql -c "CREATE DATABASE health_check_db;"
 else
     echo "Database 'health_check_db' already exists, skipping creation."
 fi
 
 # Check if the user 'meet' exists; if not, create it
-USER_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='meet'")
+USER_EXISTS=$(sudo -H -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='meet'")
 if [ "$USER_EXISTS" != "1" ]; then
-    sudo -u postgres psql -c "CREATE USER meet WITH PASSWORD 'Root@123';"
+    sudo -H -u postgres psql -c "CREATE USER meet WITH PASSWORD 'Root@123';"
 else
     echo "User 'meet' already exists, skipping creation."
 fi
 
 # Grant privileges on the database to user 'meet'
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO meet;"
+sudo -H -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO meet;"
 
 # Grant schema-level privileges for user 'meet'
-sudo -u postgres psql -d health_check_db <<'EOF'
+sudo -H -u postgres psql -d health_check_db <<'EOF'
 GRANT ALL ON SCHEMA public TO meet;
 GRANT CREATE ON SCHEMA public TO meet;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO meet;
@@ -73,7 +76,7 @@ if [ ! -f "/root/webapp.zip" ]; then
 fi
 
 # Unzip the app
-sudo unzip "/root/webapp.zip" -d /opt/csye6225
+sudo unzip "/webapp.zip" -d /opt/csye6225
 
 if [ -d "/opt/csye6225/webapp" ]; then
     sudo mv "/opt/csye6225/webapp" /opt/csye6225/webapp
@@ -92,7 +95,7 @@ cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exi
 npm install
 
 # Create environment variables file (.env)
-echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=10.116.0.3\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
+echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=localhost\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
 
 # Create and enable the systemd service for the app if it does not exist
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
