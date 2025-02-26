@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+export DEBIAN_FRONTEND=noninteractive
 
 # Ensure commands running as postgres have a proper HOME.
 export HOME=/root
