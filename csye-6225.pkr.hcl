@@ -151,7 +151,7 @@ source "googlecompute" "ubuntu" {
   project_id              = var.gcp_project_id
   zone                    = var.gcp_zone
   machine_type            = var.gcp_machine_type
-  image_name              = "custom-node-postgres-app-{{timestamp}}"
+  image_name              = "csye-6225-{{timestamp}}"
   source_image_family     = "ubuntu-2204-lts"
   source_image_project_id = ["ubuntu-os-cloud"]
   ssh_username            = "packer"
