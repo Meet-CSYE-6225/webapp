@@ -25,7 +25,7 @@ variable "artifact_dest_dir" {
 
 variable "artifact_destination" {
   type        = string
-  default     = "/opt/csye6225/webapp/webapp.zip"
+  default     = "/opt/csye6225/webapp.zip"
   description = "Full destination path on the instance for the artifact"
 }
 
@@ -197,10 +197,12 @@ build {
   }
 
   # Upload the artifact file to the destination directory (using artifact_destination)
-  provisioner "file" {
-    source      = "{{ user `artifact_path` }}"
-    destination = "{{ user `artifact_destination` }}"
-  }
+provisioner "file" {
+  source      = "./"
+  destination = "/opt/csye/webapp"
+}
+
+
 
   # Run the provisioning script 
   provisioner "shell" {
