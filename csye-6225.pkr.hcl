@@ -202,6 +202,7 @@ build {
   provisioner "file" {
     source      = "./"
     destination = "/root/webapp.zip"
+    use_sudo    = true
     generated   = true
   }
 
