@@ -4,7 +4,13 @@ export DEBIAN_FRONTEND=noninteractive
 
 # Ensure commands running as postgres have a proper HOME.
 export HOME=/root
+sudo mkdir -p /var/lib/apt/lists/partial
+sudo apt-get clean
 
+# Ensure /home/ubuntu exists with proper permissions
+sudo mkdir -p /home/ubuntu
+sudo chown ubuntu:ubuntu /home/ubuntu
+sudo chmod 755 /home/ubuntu
 # Update packages
 sudo apt update -y
 sudo apt upgrade -y
