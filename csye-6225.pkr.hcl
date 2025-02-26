@@ -184,34 +184,21 @@ source "googlecompute" "ubuntu" {
 }
 
 build {
-  sources = [
-    "source.amazon-ebs.ubuntu",
-    "source.googlecompute.ubuntu"
-  ]
-  # provisioner "shell" {
-  #   inline = ["sudo mkdir -p /opt/csye6225/webapp"]
-  # }
-  # Create the destination directory
+  name    = "custom-node-postgres-image"
+  sources = ["source.amazon-ebs.aws_image", "source.googlecompute.gcp_image"]
+
   provisioner "shell" {
     inline = [
-      "sudo mkdir -p /opt/csye6225/webapp && sudo chmod 777 /opt/csye6225/webapp"
+      "mkdir -p /opt/csye6225/try/webapp"
     ]
   }
 
-  # Upload the artifact file to the destination directory (using artifact_destination)
+  # Copy the entire webapp directory to the target machine
   provisioner "file" {
-    source      = var.artifact_path
-    destination = "/home/ubuntu/webapp.zip"
-    generated   = true
+    source      = "./"
+    destination = "/opt/csye6225/try/webapp/"
   }
 
-  # provisioner "shell" {
-  #   inline = ["sudo mv /home/ubuntu/webapp.zip /root/webapp.zip"]
-  # }
-
-
-
-  # Run the provisioning script 
   provisioner "shell" {
     environment_vars = [
       "DB_NAME=${var.DB_NAME}",
@@ -220,8 +207,8 @@ build {
       "DB_HOST=${var.DB_HOST}"
     ]
     inline = [
-      "chmod +x /opt/csye6225/webapp/setup.sh",
-      "/opt/csye6225/webapp/webapp/setup.sh"
+      "chmod +x /tmp/webapp/scripts/setup.sh",
+      "/tmp/webapp/scripts/setup.sh"
     ]
   }
 }
