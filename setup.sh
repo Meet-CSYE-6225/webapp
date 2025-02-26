@@ -23,7 +23,7 @@ sudo apt-get install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs np
 
 # Start and enable PostgreSQL
 sudo systemctl start postgresql
-sudo systemctl enable postgresql
+sudo systemctl enable postgresql || true
 
 # Update PostgreSQL configuration for remote connections
 sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/14/main/postgresql.conf
