@@ -88,7 +88,7 @@ app.get('/healthz', async (req, res) => {
     await sequelize.authenticate();
     console.log('Database connection verified.');
 
-    // Always check for the HealthCheck table existence
+    // Always check for the HealthCheck table exist or not
     await checkTableExists();
 
     await HealthCheck.create({});
