@@ -20,36 +20,35 @@ sudo systemctl enable postgresql
 # Set listen_addresses to '*' in postgresql.conf
 sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgresql/16/main/postgresql.conf
 
-# Add a rule to pg_hba.conf 
-grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/16/main/pg_hba.conf || \
+# Add a rule to pg_hba.conf (using sudo so we have permission)
+sudo grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/16/main/pg_hba.conf || \
     echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/16/main/pg_hba.conf
 sudo chown -R postgres:postgres /var/lib/postgresql
 
 # Restart PostgreSQL to apply configuration changes
 sudo systemctl restart postgresql
 
-# Check if the database 'health_check_db' exists: if not, create it
+# Check if the database 'health_check_db' exists; if not, create it
 DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='health_check_db'")
 if [ "$DB_EXISTS" != "1" ]; then
     sudo -u postgres psql -c "CREATE DATABASE health_check_db;"
 else
-    echo "Database 'health_check_db' already exists, Skipping creation"
+    echo "Database 'health_check_db' already exists, skipping creation."
 fi
 
-# Check if the user 'meet' exists; if not: create it
+# Check if the user 'meet' exists; if not, create it
 USER_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='meet'")
 if [ "$USER_EXISTS" != "1" ]; then
     sudo -u postgres psql -c "CREATE USER meet WITH PASSWORD 'Root@123';"
 else
-    echo "User 'meet' already exists, Skipping creation."
+    echo "User 'meet' already exists, skipping creation."
 fi
 
-# Grant privileges on the database to the user meet
+# Grant privileges on the database to the user 'meet'
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO meet;"
 
-# Grant schema-level privileges 
+# Grant schema-level privileges (only for user 'meet')
 sudo -u postgres psql -d health_check_db <<'EOF'
-GRANT ALL ON SCHEMA public TO health_check_db;
 GRANT ALL ON SCHEMA public TO meet;
 GRANT CREATE ON SCHEMA public TO meet;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO meet;
@@ -65,6 +64,13 @@ fi
 
 # Deploy app to /opt/csye6225
 sudo mkdir -p /opt/csye6225
+
+# Check that the artifact exists before unzipping
+if [ ! -f "/root/webapp.zip" ]; then
+    echo "Error: /root/webapp.zip not found. Exiting."
+    exit 1
+fi
+
 # Unzip the app
 sudo unzip "/root/webapp.zip" -d /opt/csye6225
 
@@ -83,13 +89,12 @@ sudo apt install nodejs -y
 # Change directory to the app folder
 cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exiting."; exit 1; }
 
-
-
 npm install
-
 
 # Create environment variables file (.env)
 echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=localhost\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
+
+# Create and enable the systemd service for the app if it does not exist
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
 sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
 [Unit]
