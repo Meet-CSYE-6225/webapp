@@ -30,8 +30,8 @@ DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname=
 USER_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='meet'")
 [ "$USER_EXISTS" != "1" ] && sudo -u postgres psql -c "CREATE USER meet WITH PASSWORD 'Root@123';"
 
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE cloud_app TO meet;"
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'Tejal123';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_cehck_db TO meet;"
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'Root@123';"
 
 # App user and group
 sudo groupadd -f csye6625app
@@ -73,4 +73,4 @@ sudo systemctl daemon-reload
 sudo systemctl enable csye6225
 sudo systemctl start csye6225
 
-echo "** Setup complete! **"
+echo " Setup complete! "
