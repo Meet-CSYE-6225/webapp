@@ -128,7 +128,6 @@ source "amazon-ebs" "ubuntu" {
   ami_name      = "custom-node-postgres-app-{{timestamp}}"
   instance_type = var.instance_type
   region        = var.aws_region
-  ssh_timeout   = var.ssh_timeout
   source_ami_filter {
     filters = {
       name                  = var.ubuntu_image_filter
@@ -138,7 +137,7 @@ source "amazon-ebs" "ubuntu" {
     owners      = [var.amazon_ami_owner]
     most_recent = true
   }
-  ssh_username = var.ubuntu
+  ssh_username = "ubuntu"
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = var.volume_size
@@ -155,7 +154,7 @@ source "googlecompute" "ubuntu" {
   image_name              = "custom-node-postgres-app-{{timestamp}}"
   source_image_family     = "ubuntu-2204-lts"
   source_image_project_id = ["ubuntu-os-cloud"]
-  ssh_username            = packer
+  ssh_username            = "packer"
   disk_size               = var.volume_size
   disk_type               = var.gcp_disk_type
 }
