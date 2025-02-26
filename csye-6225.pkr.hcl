@@ -144,6 +144,7 @@ source "amazon-ebs" "ubuntu" {
     volume_type           = var.volume_type
     delete_on_termination = true
   }
+  ami_users = ["585008064466", "619071353173"]
 }
 
 # --- GCP Builder ---
