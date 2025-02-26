@@ -1,12 +1,17 @@
 #!/bin/bash
+set -e
+export DEBIAN_FRONTEND=noninteractive
 
 # Update packages
 sudo apt update -y
 sudo apt upgrade -y
 
-# Install PostgreSQL and unzip
-sudo apt install postgresql postgresql-contrib unzip -y
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgresql.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
+# Install PostgreSQL and unzip
+sudo apt update && sudo apt install -y postgresql-14 postgresql-contrib-14 unzip curl nodejs npm
+cd /tmp
 # Start and enable PostgreSQL
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
@@ -18,6 +23,7 @@ sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" /etc/postgres
 # Add a rule to pg_hba.conf 
 grep -q "^host\s\+all\s\+all\s\+0.0.0.0/0\s\+md5" /etc/postgresql/16/main/pg_hba.conf || \
     echo "host    all    all    0.0.0.0/0    md5" | sudo tee -a /etc/postgresql/16/main/pg_hba.conf
+sudo chown -R postgres:postgres /var/lib/postgresql
 
 # Restart PostgreSQL to apply configuration changes
 sudo systemctl restart postgresql
@@ -79,10 +85,31 @@ cd /opt/csye6225/webapp || { echo "Directory /opt/csye6225/webapp not found. Exi
 
 
 
-    npm install
+npm install
 
 
 # Create environment variables file (.env)
 echo -e "DB_NAME=health_check_db\nDB_USER=meet\nDB_PASSWORD=Root@123\nDB_HOST=localhost\nDB_PORT=5432\nPORT=8080" | sudo tee .env > /dev/null
+if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
+sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
+[Unit]
+Description=CSYE6225 Web Application Service
+After=network.target
+
+[Service]
+Type=simple
+User=csye6225user
+WorkingDirectory=/opt/csye6225/webapp
+ExecStart=/usr/bin/node app.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+fi
+
+sudo systemctl daemon-reload
+sudo systemctl enable csye6225
+sudo systemctl start csye6225
 
 echo "Setup completed successfully!"

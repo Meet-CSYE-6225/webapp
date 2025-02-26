@@ -3,8 +3,8 @@ Description=CSYE6225 Web Application
 After=network.target
 
 [Service]
-User=csye6225
-Group=csye6225
+User=csye6225user
+Group=csye6225app
 WorkingDirectory=/opt/webapp
 ExecStart=/usr/bin/node app.js
 Restart=always

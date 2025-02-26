@@ -125,6 +125,23 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
+variable "DB_NAME" {
+  type    = string
+  default = "health_check_db"
+}
+variable "DB_USER" {
+  type    = string
+  default = "meet"
+}
+variable "DB_HOST" {
+  type    = string
+  default = "localhost"
+}
+variable "DB_PASSWORD" {
+  type    = string
+  default = "password"
+
+}
 
 # --- AWS Builder ---
 source "amazon-ebs" "ubuntu" {
@@ -169,24 +186,32 @@ build {
     "source.googlecompute.ubuntu"
   ]
 
-  # Create the destination directory and adjust its ownership
+  # Create the destination directory
   provisioner "shell" {
     inline = [
-      "sudo mkdir -p ${var.artifact_dest_dir}",
-      "sudo chown ${var.ssh_username}:${var.ssh_username} ${var.artifact_dest_dir}"
+      "mkdir -p /tmp/webapp"
     ]
   }
 
-  # Upload the artifact file
+  # Upload the  file
   provisioner "file" {
-    source      = var.artifact_path
-    destination = var.artifact_destination
-    generated   = true
+    source      = "./"
+    destination = "/tmp/webapp/"
   }
+
+
 
   # Run the provisioning script with sudo and inject ARTIFACT_PATH into the command
   provisioner "shell" {
-    script          = var.provision_script
-    execute_command = "sudo ARTIFACT_PATH=${var.artifact_destination} bash {{ .Path }}"
+    environment_vars = [
+      "DB_NAME=${var.DB_NAME}",
+      "DB_USER=${var.DB_USER}",
+      "DB_PASSWORD=${var.DB_PASSWORD}",
+      "DB_HOST=${var.DB_HOST}"
+    ]
+    inline = [
+      "chmod +x /tmp/webapp/setup.sh",
+      "/tmp/webapp/setup.sh"
+    ]
   }
 }
