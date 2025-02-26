@@ -126,17 +126,21 @@ variable "gcp_machine_type" {
   description = "Machine type for GCP image building"
 }
 variable "DB_NAME" {
-  type = string
+  type    = string
+  default = "health_check_db"
 }
 variable "DB_USER" {
-  type = string
+  type    = string
+  default = "meet"
 }
 variable "DB_HOST" {
   type    = string
   default = "localhost"
 }
 variable "DB_PASSWORD" {
-  type = string
+  type    = string
+  default = "password"
+
 }
 
 # --- AWS Builder ---
