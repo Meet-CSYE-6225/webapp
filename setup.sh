@@ -47,7 +47,8 @@ DB_NAME=health_check_db
 DB_USER=meet
 DB_PASSWORD=Root@123
 DB_HOST=localhost
-DB_PORT=8080
+DB_PORT=5432
+PORT=8080
 EOF
 
 # systemd service
