@@ -220,8 +220,8 @@ build {
       "DB_HOST=${var.DB_HOST}"
     ]
     inline = [
-      "chmod +x /opt/csye6225/webapp/setup.sh",
-      "/opt/csye6225/webapp/setup.sh"
+      "chmod +x /opt/csye6225/webapp_extracted/setup.sh",
+      "/opt/csye6225/webapp/webapp_extracted/setup.sh"
     ]
   }
 }
