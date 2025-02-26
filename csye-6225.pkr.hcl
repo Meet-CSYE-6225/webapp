@@ -188,7 +188,9 @@ build {
     "source.amazon-ebs.ubuntu",
     "source.googlecompute.ubuntu"
   ]
-
+  provisioner "shell" {
+    inline = ["sudo mkdir -p /opt/csye/webapp"]
+  }
   # Create the destination directory
   provisioner "shell" {
     inline = [
