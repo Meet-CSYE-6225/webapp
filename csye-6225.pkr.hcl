@@ -185,7 +185,7 @@ source "googlecompute" "ubuntu" {
 
 build {
   name    = "custom-node-postgres-image"
-  sources = ["source.amazon", "source.googlecompute"]
+  sources = ["source.amazon-ebs.ubuntu", "source.googlecompute.ubuntu"]
 
   provisioner "shell" {
     inline = [
