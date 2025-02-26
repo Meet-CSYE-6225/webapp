@@ -34,7 +34,7 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE health_check_db TO me
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'Root@123';"
 
 # App user and group
-sudo groupadd -f csye6625app
+sudo groupadd -f csye6225app
 id clouduser &>/dev/null || sudo useradd -m -g csye6225app csye6225user
 
 # App deployment
