@@ -125,17 +125,17 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
-variable "DB_NAME"{
+variable "DB_NAME" {
   type = string
 }
-variable "DB_USER"{
+variable "DB_USER" {
   type = string
 }
-variable "DB_HOST"{
-  type = string
+variable "DB_HOST" {
+  type    = string
   default = "localhost"
 }
-variable "DB_PASSWORD"{
+variable "DB_PASSWORD" {
   type = string
 }
 
