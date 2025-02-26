@@ -124,7 +124,7 @@ variable "DB_PASSWORD" {
 
 # --- AWS Builder ---
 source "amazon-ebs" "ubuntu" {
-  profile = "dev"
+  profile       = "dev"
   ami_name      = "custom-node-postgres-app-{{timestamp}}"
   instance_type = var.instance_type
   region        = var.aws_region
@@ -165,9 +165,9 @@ build {
     "source.amazon-ebs.ubuntu",
     "source.googlecompute.ubuntu"
   ]
-  
+
   # Create the destination directory
-   provisioner "shell" {
+  provisioner "shell" {
     inline = [
       "mkdir -p /tmp/webapp"
     ]
