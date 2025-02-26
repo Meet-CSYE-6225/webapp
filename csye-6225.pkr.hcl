@@ -189,7 +189,7 @@ build {
   # Create the destination directory
   provisioner "shell" {
     inline = [
-      "sudo mkdir -p /opt/csye6225/webapp"
+      "sudo mkdir -p /opt/csye6225/webapp && sudo chmod 777 /opt/csye6225/webapp"
     ]
   }
 
