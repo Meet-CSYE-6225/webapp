@@ -11,8 +11,6 @@ packer {
   }
 }
 
-
-
 variable "instance_type" {
   type        = string
   default     = "t2.micro"
@@ -73,15 +71,17 @@ variable "volume_type" {
   description = "EBS volume type"
 }
 
-
-
-
-
 # --- GCP Variables ---
 variable "gcp_project_id" {
   type        = string
-  default     = "trydev-451920"
-  description = "GCP project ID"
+  default     = "calm-rainfall-452223-r6"
+  description = "Source GCP project ID"
+}
+
+variable "gcp_destination_project_id" {
+  type        = string
+  default     = "tidal-fusion-452223-q0"
+  description = "Destination GCP project ID where the image will be copied"
 }
 
 variable "gcp_zone" {
@@ -144,7 +144,6 @@ source "amazon-ebs" "ubuntu" {
     volume_type           = var.volume_type
     delete_on_termination = true
   }
-  ami_users = ["585008064466", "619071353173"]
 }
 
 # --- GCP Builder ---
@@ -152,7 +151,7 @@ source "googlecompute" "ubuntu" {
   project_id              = var.gcp_project_id
   zone                    = var.gcp_zone
   machine_type            = var.gcp_machine_type
-  image_name              = "csye-6225-{{timestamp}}"
+  image_name              = var.ami_name
   source_image_family     = "ubuntu-2204-lts"
   source_image_project_id = ["ubuntu-os-cloud"]
   ssh_username            = "packer"
@@ -191,5 +190,12 @@ build {
       "/tmp/webapp/setup.sh"
     ]
   }
+}
 
+# Post-processor: Copy the custom image from the source project to the destination project
+post-processor "shell-local" {
+  inline = [
+    "echo 'Copying custom image to destination project...'",
+    "gcloud compute images copy ${var.ami_name} --source-project=${var.gcp_project_id} --destination-project=${var.gcp_destination_project_id} --destination-image=${var.ami_name}"
+  ]
 }
