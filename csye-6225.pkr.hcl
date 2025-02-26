@@ -165,7 +165,7 @@ build {
     "source.googlecompute.ubuntu"
   ]
 
-  # Create the destination directory
+  # Create destination directory
   provisioner "shell" {
     inline = [
       "mkdir -p /tmp/webapp"
