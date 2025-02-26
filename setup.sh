@@ -90,7 +90,7 @@ fi
 sudo chown -R csye6225user:csye6225app /opt/csye6225
 sudo chmod -R 755 /opt/csye6225
 
-# Install Node.js (if not already installed)
+# Install Node.js
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs < /dev/null
 
