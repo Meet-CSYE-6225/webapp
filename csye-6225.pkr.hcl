@@ -74,13 +74,13 @@ variable "volume_type" {
 # --- GCP Variables ---
 variable "gcp_project_id" {
   type        = string
-  default     = "trydev-451920"
+  default     = "calm-rainfall-452223-r6"
   description = "Source GCP project ID"
 }
 
-variable "gcp_destination_project_id" {
+variable "gcp_demo_account" {
   type        = string
-  default     = "destination-project-id"
+  default     = ""
   description = "Destination GCP project ID where the image will be copied"
 }
 
@@ -125,7 +125,7 @@ variable "DB_PASSWORD" {
 # --- AWS Builder ---
 source "amazon-ebs" "ubuntu" {
   profile       = "dev"
-  ami_name      = "custom-node-postgres-app-{{timestamp}}"
+  ami_name      = "csye-{{timestamp}}"
   instance_type = var.instance_type
   region        = var.aws_region
   source_ami_filter {
@@ -144,7 +144,7 @@ source "amazon-ebs" "ubuntu" {
     volume_type           = var.volume_type
     delete_on_termination = true
   }
-  ami_users = ["585008064466", "619071353173"]
+  
 }
 
 # --- GCP Builder ---
@@ -191,12 +191,38 @@ build {
       "/tmp/webapp/setup.sh"
     ]
   }
+  # Step 1: Capture AMI details
+  post-processor "manifest" {
+    output = "ami_manifest.json"
+  }
+
+  # Step 2: Extract AMI ID and Share It
+  post-processor "manifest" {
+    output = "ami_manifest.json"
+  }
+
+  post-processor "shell-local" {
+    only = ["amazon-ebs.aws_image"]
+    inline = [
+      "echo 'Fetching latest AMI ID from AWS...'",
+      "AMI_ID=$(aws ec2 describe-images --owners self --filters 'Name=name,Values=csye-*' --query 'Images[-1].ImageId' --output text)",
+      "echo 'Extracted AMI ID:' $AMI_ID",
+      "[ -z \"$AMI_ID\" ] && echo 'Error: AMI_ID not found in AWS!' && exit 1",
+      "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
+    ]
+  }
+  post-processor "shell-local" {
+    only = ["googlecompute.gcp_image"]
+    inline = [
+      "echo 'Fetching latest GCP Image ID...'",
+      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+      "echo 'Extracted Image Name: ' $IMAGE_NAME",
+      "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
+      "echo 'Granting access to demo project...'",
+      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
+    ]
+  }
+
 }
 
-# # Post-processor: Copy the custom image from the source project to the destination project
-# post-processor "shell-local" {
-#   inline = [
-#     "echo 'Copying custom image to destination project...'",
-#     "gcloud compute images copy ${var.ami_name} --source-project=${var.gcp_project_id} --destination-project=${var.gcp_destination_project_id} --destination-image=${var.ami_name}"
-#   ]
-# }
+
