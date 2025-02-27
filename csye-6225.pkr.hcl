@@ -11,24 +11,6 @@ packer {
   }
 }
 
-variable "artifact_path" {
-  type        = string
-  default     = "webapp.zip"
-  description = "Local path to the application artifact"
-}
-
-variable "artifact_dest_dir" {
-  type        = string
-  default     = "/opt/csye6225/webapp"
-  description = "Directory on the instance where the artifact will be stored"
-}
-
-variable "artifact_destination" {
-  type        = string
-  default     = "/opt/csye6225/webapp/webapp.zip"
-  description = "Full destination path on the instance for the artifact"
-}
-
 variable "instance_type" {
   type        = string
   default     = "t2.micro"
@@ -89,23 +71,17 @@ variable "volume_type" {
   description = "EBS volume type"
 }
 
-variable "provision_script" {
-  type        = string
-  default     = "init-app.sh"
-  description = "Path to the provisioning script"
-}
-
-variable "ssh_timeout" {
-  type        = string
-  default     = "5m"
-  description = "Timeout for SSH to become available"
-}
-
 # --- GCP Variables ---
 variable "gcp_project_id" {
   type        = string
-  default     = "trydev-451920"
-  description = "GCP project ID"
+  default     = "calm-rainfall-452223-r6"
+  description = "Source GCP project ID"
+}
+
+variable "gcp_demo_account" {
+  type        = string
+  default     = ""
+  description = "Destination GCP project ID where the image will be copied"
 }
 
 variable "gcp_zone" {
@@ -125,30 +101,39 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
+variable "gcp_destination_project_id" {
+  type        = string
+  default     = "tidal-fusion-452223-q0"
+  description = "Destination GCP project ID"
+}
+
+
 variable "DB_NAME" {
   type    = string
   default = "health_check_db"
 }
+
 variable "DB_USER" {
   type    = string
   default = "meet"
 }
+
 variable "DB_HOST" {
   type    = string
   default = "localhost"
 }
+
 variable "DB_PASSWORD" {
   type    = string
   default = "password"
-
 }
 
 # --- AWS Builder ---
 source "amazon-ebs" "ubuntu" {
-  ami_name      = var.ami_name
+  profile       = "dev"
+  ami_name      = "csye-{{timestamp}}"
   instance_type = var.instance_type
   region        = var.aws_region
-  ssh_timeout   = var.ssh_timeout
   source_ami_filter {
     filters = {
       name                  = var.ubuntu_image_filter
@@ -158,13 +143,14 @@ source "amazon-ebs" "ubuntu" {
     owners      = [var.amazon_ami_owner]
     most_recent = true
   }
-  ssh_username = var.ssh_username
+  ssh_username = "ubuntu"
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = var.volume_size
     volume_type           = var.volume_type
     delete_on_termination = true
   }
+
 }
 
 # --- GCP Builder ---
@@ -172,10 +158,10 @@ source "googlecompute" "ubuntu" {
   project_id              = var.gcp_project_id
   zone                    = var.gcp_zone
   machine_type            = var.gcp_machine_type
-  image_name              = var.ami_name
+  image_name              = "csye-{{timestamp}}"
   source_image_family     = "ubuntu-2204-lts"
   source_image_project_id = ["ubuntu-os-cloud"]
-  ssh_username            = var.ssh_username
+  ssh_username            = "packer"
   disk_size               = var.volume_size
   disk_type               = var.gcp_disk_type
 }
@@ -186,22 +172,19 @@ build {
     "source.googlecompute.ubuntu"
   ]
 
-  # Create the destination directory
+  # Create destination directory
   provisioner "shell" {
     inline = [
-      "sudo mkdir -p /opt/csye6225/webapp && sudo chmod 777 /opt/csye6225/webapp"
+      "mkdir -p /tmp/webapp"
     ]
   }
 
-  # Upload the  file
+  # Copy the entire webapp directory to the target machine
   provisioner "file" {
     source      = "./"
-    destination = "/opt/csye6225/webapp/"
+    destination = "/tmp/webapp/"
   }
 
-
-
-  # Run the provisioning script with sudo and inject ARTIFACT_PATH into the command
   provisioner "shell" {
     environment_vars = [
       "DB_NAME=${var.DB_NAME}",
@@ -210,8 +193,42 @@ build {
       "DB_HOST=${var.DB_HOST}"
     ]
     inline = [
-      "chmod +x /opt/csye6225/webapp/setup.sh",
-      "/opt/csye6225/webapp/setup.sh"
+      "chmod +x /tmp/webapp/setup.sh",
+      "/tmp/webapp/setup.sh"
     ]
   }
+  # Step 1: Capture AMI details
+  post-processor "manifest" {
+    output = "ami_manifest.json"
+  }
+
+  # Step 2: Extract AMI ID and Share It
+  post-processor "manifest" {
+    output = "ami_manifest.json"
+  }
+
+  post-processor "shell-local" {
+    only = ["amazon-ebs.aws_image"]
+    inline = [
+      "echo 'Fetching latest AMI ID from AWS...'",
+      "AMI_ID=$(aws ec2 describe-images --owners self --filters 'Name=name,Values=csye-*' --query 'Images[-1].ImageId' --output text)",
+      "echo 'Extracted AMI ID:' $AMI_ID",
+      "[ -z \"$AMI_ID\" ] && echo 'Error: AMI_ID not found in AWS!' && exit 1",
+      "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
+    ]
+  }
+  post-processor "shell-local" {
+    only = ["googlecompute.gcp_image"]
+    inline = [
+      "echo 'Fetching latest GCP Image ID...'",
+      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+      "echo 'Extracted Image Name: ' $IMAGE_NAME",
+      "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
+      "echo 'Granting access to demo project...'",
+      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
+    ]
+  }
+
 }
+
+
