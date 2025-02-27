@@ -144,7 +144,7 @@ source "amazon-ebs" "ubuntu" {
     volume_type           = var.volume_type
     delete_on_termination = true
   }
-  
+
 }
 
 # --- GCP Builder ---
