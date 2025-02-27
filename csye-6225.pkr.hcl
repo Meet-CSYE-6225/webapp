@@ -103,6 +103,7 @@ variable "gcp_machine_type" {
 }
 variable "gcp_destination_project_id" {
   type        = string
+  default = "tidal-fusion-452223-q0"
   description = "Destination GCP project ID"
 }
 
