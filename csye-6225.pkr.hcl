@@ -101,6 +101,11 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
+variable "gcp_destination_project_id" {
+  type        = string
+  description = "Destination GCP project ID"
+}
+
 
 variable "DB_NAME" {
   type    = string
