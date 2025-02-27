@@ -74,13 +74,13 @@ variable "volume_type" {
 # --- GCP Variables ---
 variable "gcp_project_id" {
   type        = string
-  default     = "calm-rainfall-452223-r6"
+  default     = "trydev-451920"
   description = "Source GCP project ID"
 }
 
 variable "gcp_destination_project_id" {
   type        = string
-  default     = "tidal-fusion-452223-q0"
+  default     = "destination-project-id"
   description = "Destination GCP project ID where the image will be copied"
 }
 
@@ -144,6 +144,7 @@ source "amazon-ebs" "ubuntu" {
     volume_type           = var.volume_type
     delete_on_termination = true
   }
+  ami_users = ["585008064466", "619071353173"]
 }
 
 # --- GCP Builder ---
@@ -192,10 +193,10 @@ build {
   }
 }
 
-# Post-processor: Copy the custom image from the source project to the destination project
-post-processor "shell-local" {
-  inline = [
-    "echo 'Copying custom image to destination project...'",
-    "gcloud compute images copy ${var.ami_name} --source-project=${var.gcp_project_id} --destination-project=${var.gcp_destination_project_id} --destination-image=${var.ami_name}"
-  ]
-}
+# # Post-processor: Copy the custom image from the source project to the destination project
+# post-processor "shell-local" {
+#   inline = [
+#     "echo 'Copying custom image to destination project...'",
+#     "gcloud compute images copy ${var.ami_name} --source-project=${var.gcp_project_id} --destination-project=${var.gcp_destination_project_id} --destination-image=${var.ami_name}"
+#   ]
+# }
