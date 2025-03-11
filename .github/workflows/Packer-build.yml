@@ -75,8 +75,8 @@ jobs:
       - name: Setup AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEMO }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEMO }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Authenticate to Google Cloud
@@ -108,7 +108,7 @@ jobs:
       - name: Share AMI  Dev and Demo accounts
         run: |
                   AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
-                  aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
+                  aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"}]}"
     
       - name: Share GCP Image with Demo Project
         run: |
