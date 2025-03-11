@@ -4,7 +4,7 @@
 This is a simple Node.js-based API for performing health checks on a PostgreSQL database. It ensures database and table existence, performs health check entries
 
 ## Prerequisites
-
+ 
 - **Node.js**: Install the latest version.
 - **PostgreSQL**: Install the latest version.
 - **dotenv package**: Used for environment variable management. Install it via npm if it isn’t already installed
