@@ -81,7 +81,7 @@ variable "gcp_project_id" {
 
 variable "gcp_demo_account" {
   type        = string
-  default     = ""
+  default     = "demo-183@tidal-fusion-452223-q0.iam.gserviceaccount.com"
   description = "Demo project service account to grant image access"
 }
 
