@@ -223,7 +223,7 @@ build {
       "echo 'Extracted Image Name:' $IMAGE_NAME",
       "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
       "echo 'Granting access to demo project...'",
-      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.GCP_PROJECT_ID}\" --member=\"serviceAccount:${var.GCP_DEMO_ACCOUNT}\" --role=\"roles/compute.imageUser\""
+      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.GCP_PROJECT_ID}\" --member=\"serviceAccount:${var.GCP_DESTINATION_PROJECT_ID}\" --role=\"roles/compute.imageUser\""
     ]
   }
 }
