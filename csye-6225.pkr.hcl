@@ -74,14 +74,14 @@ variable "volume_type" {
 # --- GCP Variables ---
 variable "gcp_project_id" {
   type        = string
-  default     = "calm-rainfall-452223-r6"
+  default     = "your-dev-gcp-project-id"
   description = "Source GCP project ID"
 }
 
 variable "gcp_demo_account" {
   type        = string
-  default     = ""
-  description = "Destination GCP project ID where the image will be copied"
+  default     = "demo-service-account@your-demo-project.iam.gserviceaccount.com"
+  description = "Service account for the demo project to grant image access"
 }
 
 variable "gcp_zone" {
@@ -101,31 +101,11 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
+
 variable "gcp_destination_project_id" {
   type        = string
-  default     = "tidal-fusion-452223-q0"
-  description = "Destination GCP project ID"
-}
-
-
-variable "DB_NAME" {
-  type    = string
-  default = "health_check_db"
-}
-
-variable "DB_USER" {
-  type    = string
-  default = "meet"
-}
-
-variable "DB_HOST" {
-  type    = string
-  default = "localhost"
-}
-
-variable "DB_PASSWORD" {
-  type    = string
-  default = "password"
+  default     = "your-demo-gcp-project-id"
+  description = "Destination GCP project ID (not used for copying)"
 }
 
 # --- AWS Builder ---
@@ -143,14 +123,13 @@ source "amazon-ebs" "ubuntu" {
     owners      = [var.amazon_ami_owner]
     most_recent = true
   }
-  ssh_username = "ubuntu"
+  ssh_username = var.ssh_username
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = var.volume_size
     volume_type           = var.volume_type
     delete_on_termination = true
   }
-
 }
 
 # --- GCP Builder ---
@@ -172,14 +151,13 @@ build {
     "source.googlecompute.ubuntu"
   ]
 
-  # Create destination directory
+  # Create destination directory and copy application files
   provisioner "shell" {
     inline = [
       "mkdir -p /tmp/webapp"
     ]
   }
 
-  # Copy the entire webapp directory to the target machine
   provisioner "file" {
     source      = "./"
     destination = "/tmp/webapp/"
@@ -197,38 +175,33 @@ build {
       "/tmp/webapp/setup.sh"
     ]
   }
-  # Step 1: Capture AMI details
+
   post-processor "manifest" {
     output = "ami_manifest.json"
   }
 
-  # Step 2: Extract AMI ID and Share It
-  post-processor "manifest" {
-    output = "ami_manifest.json"
-  }
-
+  # AWS: Grant launch permission to DEV and DEMO accounts (sharing by IAM, not by copying)
   post-processor "shell-local" {
     only = ["amazon-ebs.aws_image"]
     inline = [
-      "echo 'Fetching latest AMI ID from AWS...'",
+      "echo 'Fetching latest AWS AMI ID...'",
       "AMI_ID=$(aws ec2 describe-images --owners self --filters 'Name=name,Values=csye-*' --query 'Images[-1].ImageId' --output text)",
-      "echo 'Extracted AMI ID:' $AMI_ID",
+      "echo 'Extracted AWS AMI ID:' $AMI_ID",
       "[ -z \"$AMI_ID\" ] && echo 'Error: AMI_ID not found in AWS!' && exit 1",
-      "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
+      "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"${AWS_ACCOUNT_ID_DEV}\\\"},{\\\"UserId\\\":\\\"${AWS_ACCOUNT_ID_DEMO}\\\"}]}\" --region ${var.aws_region}"
     ]
   }
+
+  # GCP: Grant the demo project service account access to the image (sharing via IAM)
   post-processor "shell-local" {
     only = ["googlecompute.gcp_image"]
     inline = [
-      "echo 'Fetching latest GCP Image ID...'",
-      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
-      "echo 'Extracted Image Name: ' $IMAGE_NAME",
+      "echo 'Fetching latest GCP Image name...'",
+      "IMAGE_NAME=$(gcloud compute images list --project=${var.GCP_PROJECT_ID} --filter='name~csye-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+      "echo 'Extracted GCP Image Name: ' $IMAGE_NAME",
       "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
-      "echo 'Granting access to demo project...'",
-      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
+      "echo 'Granting access to demo project service account...'",
+      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=${var.GCP_PROJECT_ID} --member=\"serviceAccount:${var.GCP_DESTINATION_PROJECT_ID}\" --role=\"roles/compute.imageUser\""
     ]
   }
-
 }
-
-
