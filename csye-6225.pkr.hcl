@@ -80,8 +80,8 @@ variable "gcp_project_id" {
 
 variable "gcp_demo_account" {
   type        = string
-  default     = "demo-183@tidal-fusion-452223-q0.iam.gserviceaccount.com"
-  description = "Service account email for the demo project that will have image access"
+  default     = ""
+  description = "Destination GCP project ID where the image will be copied"
 }
 
 variable "gcp_zone" {
@@ -101,12 +101,12 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
-
 variable "gcp_destination_project_id" {
   type        = string
   default     = "tidal-fusion-452223-q0"
   description = "Destination GCP project ID"
 }
+
 
 variable "DB_NAME" {
   type    = string
@@ -150,6 +150,7 @@ source "amazon-ebs" "ubuntu" {
     volume_type           = var.volume_type
     delete_on_termination = true
   }
+
 }
 
 # --- GCP Builder ---
@@ -171,10 +172,9 @@ build {
     "source.googlecompute.ubuntu"
   ]
 
-  # Set non-interactive mode to avoid debconf warnings
+  # Create destination directory
   provisioner "shell" {
     inline = [
-      "export DEBIAN_FRONTEND=noninteractive",
       "mkdir -p /tmp/webapp"
     ]
   }
@@ -197,13 +197,16 @@ build {
       "/tmp/webapp/setup.sh"
     ]
   }
-
-  # Capture AWS AMI details and output manifest
+  # Step 1: Capture AMI details
   post-processor "manifest" {
     output = "ami_manifest.json"
   }
 
-  # Extract AWS AMI ID and share it with Dev and Demo accounts
+  # Step 2: Extract AMI ID and Share It
+  post-processor "manifest" {
+    output = "ami_manifest.json"
+  }
+
   post-processor "shell-local" {
     only = ["amazon-ebs.aws_image"]
     inline = [
@@ -214,19 +217,18 @@ build {
       "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
     ]
   }
-
-  # Extract GCP image ID, share it with the demo service account, and copy it to the demo project
   post-processor "shell-local" {
     only = ["googlecompute.gcp_image"]
     inline = [
       "echo 'Fetching latest GCP Image ID...'",
-      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~csye-.*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
       "echo 'Extracted Image Name: ' $IMAGE_NAME",
       "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
       "echo 'Granting access to demo project...'",
-      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\"",
-      "echo 'Copying image to demo project...'",
-      "gcloud compute images create demo-csye-image-$(date +%s) --source-image=$IMAGE_NAME --source-image-project=${var.gcp_project_id} --project=${var.gcp_destination_project_id}"
+      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
     ]
   }
+
 }
+
+
