@@ -217,17 +217,20 @@ build {
       "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
     ]
   }
-  post-processor "shell-local" {
-    only = ["googlecompute.gcp_image"]
-    inline = [
-      "echo 'Fetching latest GCP Image ID...'",
-      "IMAGE_NAME=$(gcloud compute images list --project=${var.GCP_PROJECT_ID} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
-      "echo 'Extracted Image Name: ' $IMAGE_NAME",
-      "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
-      "echo 'Granting access to demo project...'",
-      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.GCP_PROJECT_ID}\" --member=\"serviceAccount:${var.GCP_DEMO_ACCOUNT}\" --role=\"roles/compute.imageUser\""
-    ]
-  }
+post-processor "shell-local" {
+  only = ["googlecompute.gcp_image"]
+  inline = [
+    "echo 'Fetching latest GCP Image ID...'",
+    "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~csye-.*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+    "echo 'Extracted Image Name: ' $IMAGE_NAME",
+    "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
+    "echo 'Granting access to demo project...'",
+    "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\"",
+    "echo 'Copying image to demo project...'",
+    "gcloud compute images create demo-csye-image --source-image=$IMAGE_NAME --source-image-project=${var.gcp_project_id} --project=${var.gcp_destination_project_id}"
+  ]
+}
+
 
 }
 
