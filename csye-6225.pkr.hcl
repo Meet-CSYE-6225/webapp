@@ -198,12 +198,12 @@ build {
     ]
   }
 
-  # Step 1: Capture AWS AMI details and output manifest
+  # Capture AWS AMI details and output manifest
   post-processor "manifest" {
     output = "ami_manifest.json"
   }
 
-  # Step 2: Extract AWS AMI ID and share it with Dev and Demo accounts
+  # Extract AWS AMI ID and share it with Dev and Demo accounts
   post-processor "shell-local" {
     only = ["amazon-ebs.aws_image"]
     inline = [
@@ -215,7 +215,7 @@ build {
     ]
   }
 
-  # Step 3: Extract GCP image ID, share it with the demo service account, and copy it to the demo project
+  # Extract GCP image ID, share it with the demo service account, and copy it to the demo project
   post-processor "shell-local" {
     only = ["googlecompute.gcp_image"]
     inline = [
