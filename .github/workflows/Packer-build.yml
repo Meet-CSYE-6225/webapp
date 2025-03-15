@@ -97,8 +97,8 @@ jobs:
             csye-6225.pkr.hcl
       - name: Share AMI Dev and Demo accounts
         run: |
-          AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
-          aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
+           AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
+           aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
       - name: Share and Copy GCP Image with Demo Project
         run: |
           IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
@@ -107,10 +107,12 @@ jobs:
             echo "Error: No image found!"
             exit 1
           fi
+          # Share the image by adding an IAM policy binding.
           gcloud compute images add-iam-policy-binding "$IMAGE_NAME" \
             --project="${{ secrets.GCP_PROJECT_ID }}" \
             --member="serviceAccount:${{ secrets.GCP_DEMO_ACCOUNT }}" \
             --role="roles/compute.imageUser"
+          # Copy the image to the demo project with a unique name.
           gcloud compute images create demo-csye-image-$(date +%s) \
             --source-image=$IMAGE_NAME \
             --source-image-project=${{ secrets.GCP_PROJECT_ID }} \
