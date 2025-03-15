@@ -35,7 +35,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
       - name: Cache node_modules
         uses: actions/cache@v3
         with:
@@ -106,27 +105,20 @@ jobs:
             -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
             -var "gcp_destination_project_id=${{ secrets.GCP_DESTINATION_PROJECT_ID }}" \
             csye-6225.pkr.hcl
-
-      - name: Share AMI Dev and Demo accounts
+      - name: Share AMI  Dev and Demo accounts
         run: |
-          AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
-          aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
+                  AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
+                  aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
     
-      - name: Share and Copy GCP Image with Demo Project
+      - name: Share GCP Image with Demo Project
         run: |
-          IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
-          echo "Extracted Image Name: $IMAGE_NAME"
-          if [ -z "$IMAGE_NAME" ]; then
-            echo "Error: No image found!"
-            exit 1
-          fi
-          # Share the image so the demo service account can access it.
-          gcloud compute images add-iam-policy-binding "$IMAGE_NAME" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" \
-            --member="serviceAccount:${{ secrets.GCP_DEMO_ACCOUNT }}" \
-            --role="roles/compute.imageUser"
-          # Copy the image to the demo project with a unique name.
-          gcloud compute images create demo-csye-image-$(date +%s) \
-            --source-image=$IMAGE_NAME \
-            --source-image-project=${{ secrets.GCP_PROJECT_ID }} \
-            --project=${{ secrets.GCP_DESTINATION_PROJECT_ID }}
+                          IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
+                          echo "Extracted Image Name: $IMAGE_NAME"
+                          if [ -z "$IMAGE_NAME" ]; then
+                            echo "Error: No image found!"
+                            exit 1
+                          fi
+                          gcloud compute images add-iam-policy-binding "$IMAGE_NAME" \
+                            --project="${{ secrets.GCP_PROJECT_ID }}" \
+                            --member="serviceAccount:${{ secrets.GCP_DEMO_ACCOUNT }}" \
+                            --role="roles/compute.imageUser"
