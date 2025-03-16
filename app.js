@@ -8,6 +8,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT;
 
+// Import file routes (for /v1/file endpoints)
+const fileRoutes = require('./routes/fileRoutes');
+
 // PostgreSQL Client for database creation
 async function ensureDatabaseExists() {
   const client = new Client({
@@ -88,7 +91,7 @@ app.get('/healthz', async (req, res) => {
     await sequelize.authenticate();
     console.log('Database connection verified.');
 
-    // Always check for the HealthCheck table exist or not
+    // Always check for the HealthCheck table existence
     await checkTableExists();
 
     await HealthCheck.create({});
@@ -115,7 +118,7 @@ app.use('/healthz/*', (req, res) => {
     .end();
 });
 
-// Handle unsupported methods on /healthz
+// Handle unsupported methods on /healthz (only GET is supported)
 app.all('/healthz', (req, res) => {
   if (req.method !== 'GET') {
     return res
@@ -124,6 +127,9 @@ app.all('/healthz', (req, res) => {
       .end();
   }
 });
+
+// Mount file routes under /v1/file (this will handle POST, GET by id, DELETE, etc.)
+app.use('/v1/file', fileRoutes);
 
 // Start the server only if this file is run directly
 if (require.main === module) {
