@@ -78,22 +78,24 @@ app.use('/healthz', (req, res, next) => {
   next();
 });
 
-// Health Check Endpoint
+// Explicitly handle HEAD requests for /healthz to return 405
+app.head('/healthz', (req, res) => {
+  return res
+    .status(StatusCodes.METHOD_NOT_ALLOWED)
+    .set('Cache-Control', 'no-cache')
+    .end();
+});
+
+// Health Check Endpoint (GET only)
 app.get('/healthz', async (req, res) => {
   try {
     console.log('Checking database and tables before processing request...');
-
-    // Ensure the database exists and the connection is valid
     await ensureDatabaseExists();
     await sequelize.authenticate();
     console.log('Database connection verified.');
-
-    // Always check for the HealthCheck table exist or not
     await checkTableExists();
-
     await HealthCheck.create({});
     console.log('Health check entry added.');
-
     return res
       .status(StatusCodes.OK)
       .set('Cache-Control', 'no-cache')
@@ -107,7 +109,7 @@ app.get('/healthz', async (req, res) => {
   }
 });
 
-// Middleware to catch any requests to subpaths under /healthz (e.g., /healthz/app)
+// Reject any requests to subpaths under /healthz (e.g., /healthz/app)
 app.use('/healthz/*', (req, res) => {
   return res
     .status(StatusCodes.BAD_REQUEST)
@@ -115,7 +117,7 @@ app.use('/healthz/*', (req, res) => {
     .end();
 });
 
-// Handle unsupported methods on /healthz
+// Handle unsupported methods on /healthz (only GET is allowed)
 app.all('/healthz', (req, res) => {
   if (req.method !== 'GET') {
     return res
@@ -125,20 +127,21 @@ app.all('/healthz', (req, res) => {
   }
 });
 
+// Mount the versioned file routes (see routes/v1FileRoutes.js)
+const v1FileRoutes = require('./routes/v1FileRoutes');
+app.use('/v1/file', v1FileRoutes);
+
 // Start the server only if this file is run directly
 if (require.main === module) {
   (async function initializeServer() {
     try {
       console.log('Starting database check...');
       await ensureDatabaseExists();
-
       console.log('Connecting to database...');
       await sequelize.authenticate();
       console.log('Database connection successful.');
-
       console.log('Ensuring tables exist...');
       await ensureTablesExist();
-
       app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
       });
@@ -149,4 +152,4 @@ if (require.main === module) {
   })();
 }
 
-module.exports = app; // Export app for testing
+module.exports = app;
