@@ -5,10 +5,10 @@ After=network.target
 [Service]
 User=csye6225
 Group=csye6225
-WorkingDirectory=/opt/webapp
+WorkingDirectory=/opt/csye6225/webapp
 ExecStart=/usr/bin/node app.js
 Restart=always
-EnvironmentFile=/opt/webapp/.env
+EnvironmentFile=/opt/csye6225/webapp/.env
 
 [Install]
 WantedBy=multi-user.target
