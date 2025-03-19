@@ -42,22 +42,18 @@ jobs:
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-modules-
-
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-
       - name: Install Dependencies
         run: npm install
-
       - name: Wait for PostgreSQL to be ready
         run: |
           until pg_isready -h localhost -p 5432 -U $DB_USER; do
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
-
       - name: Run tests
         env:
           DB_NAME: health_check_db
@@ -68,30 +64,24 @@ jobs:
           PORT: 8080
           NODE_ENV: test
         run: npm test
-
       - name: Build application artifact
         run: zip -r webapp.zip . -x "*.git*" "node_modules/*" "*.env" "*.zip"
-
       - name: Setup AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
       - name: Setup GCP CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
-
       - name: Build Custom Images with Packer
         run: |
           echo "GOOGLE_APPLICATION_CREDENTIALS is set to: $GOOGLE_APPLICATION_CREDENTIALS"
@@ -105,20 +95,24 @@ jobs:
             -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
             -var "gcp_destination_project_id=${{ secrets.GCP_DESTINATION_PROJECT_ID }}" \
             csye-6225.pkr.hcl
-      - name: Share AMI  Dev and Demo accounts
+      - name: Share AMI Dev and Demo accounts
         run: |
-                  AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
-                  aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
-    
+          AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
+          aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
       - name: Share GCP Image with Demo Project
         run: |
-                          IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
-                          echo "Extracted Image Name: $IMAGE_NAME"
-                          if [ -z "$IMAGE_NAME" ]; then
-                            echo "Error: No image found!"
-                            exit 1
-                          fi
-                          gcloud compute images add-iam-policy-binding "$IMAGE_NAME" \
-                            --project="${{ secrets.GCP_PROJECT_ID }}" \
-                            --member="serviceAccount:${{ secrets.GCP_DEMO_ACCOUNT }}" \
-                            --role="roles/compute.imageUser"
+          IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
+          echo "Extracted Image Name: $IMAGE_NAME"
+          if [ -z "$IMAGE_NAME" ]; then
+            echo "Error: No image found!"
+            exit 1
+          fi
+          echo "Granting access to demo project..."
+          gcloud compute images add-iam-policy-binding "$IMAGE_NAME" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" \
+            --member="serviceAccount:${{ secrets.GCP_DEMO_ACCOUNT }}" \
+            --role="roles/compute.imageUser"
+          gcloud compute images create "${IMAGE_NAME}-copy" \
+            --source-image="$IMAGE_NAME" \
+            --source-image-project="${{ secrets.GCP_PROJECT_ID }}" \
+            --project="${{ secrets.GCP_DESTINATION_PROJECT_ID }}"
