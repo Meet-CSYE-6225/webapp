@@ -101,12 +101,12 @@ variable "gcp_machine_type" {
   default     = "e2-micro"
   description = "Machine type for GCP image building"
 }
-
 variable "gcp_destination_project_id" {
   type        = string
   default     = "tidal-fusion-452223-q0"
   description = "Destination GCP project ID"
 }
+
 
 variable "DB_NAME" {
   type    = string
@@ -150,6 +150,7 @@ source "amazon-ebs" "ubuntu" {
     volume_type           = var.volume_type
     delete_on_termination = true
   }
+
 }
 
 # --- GCP Builder ---
@@ -196,11 +197,16 @@ build {
       "/tmp/webapp/setup.sh"
     ]
   }
-
-  # Capture AMI details and share (AWS)
+  # Step 1: Capture AMI details
   post-processor "manifest" {
     output = "ami_manifest.json"
   }
+
+  # Step 2: Extract AMI ID and Share It
+  post-processor "manifest" {
+    output = "ami_manifest.json"
+  }
+
   post-processor "shell-local" {
     only = ["amazon-ebs.aws_image"]
     inline = [
@@ -211,18 +217,18 @@ build {
       "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
     ]
   }
-  # Share and Copy GCP Image
   post-processor "shell-local" {
     only = ["googlecompute.gcp_image"]
     inline = [
       "echo 'Fetching latest GCP Image ID...'",
-      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~csye-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
-      "echo 'Extracted Image Name:' $IMAGE_NAME",
+      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+      "echo 'Extracted Image Name: ' $IMAGE_NAME",
       "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
       "echo 'Granting access to demo project...'",
-      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\"",
-      "echo 'Copying image to destination project...'",
-      "gcloud compute images create \"${IMAGE_NAME}-copy\" --source-image=\"$IMAGE_NAME\" --source-image-project=\"${var.gcp_project_id}\" --project=\"${var.gcp_destination_project_id}\""
+      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
     ]
   }
+
 }
+
+
