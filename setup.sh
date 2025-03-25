@@ -3,18 +3,21 @@ set -e
 
 export DEBIAN_FRONTEND=noninteractive
 
-# Enable universe repository for npm availability
+# Enable universe repository if needed 
 sudo add-apt-repository universe -y
 
 # Update packages
 sudo apt update -y && sudo apt upgrade -y
 
-# Option A: Install Node.js and npm from Ubuntu repos
-# sudo apt install -y unzip curl nodejs npm
+# Install unzip and curl 
+sudo apt install -y unzip curl
 
-# Option B: Install Node.js (and npm) from NodeSource
-curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-sudo apt install -y unzip curl nodejs
+# Official Node.js (LTS) installation 
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Continue with the rest of your setup...
+
 
 
 # Install CloudWatch Agent (Ubuntu package)
