@@ -6,7 +6,7 @@ const HealthCheck = require('./models/healthCheckModel');
 require('dotenv').config();
 
 // Import the logger 
-const logger = require('./logger');
+const logger = require('./config/logger');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
