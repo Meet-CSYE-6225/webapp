@@ -3,36 +3,73 @@ set -e
 
 export DEBIAN_FRONTEND=noninteractive
 
+# Enable universe repository if needed 
+sudo add-apt-repository universe -y
+
 # Update packages
 sudo apt update -y && sudo apt upgrade -y
 
-# Install only the necessary packages (excluding local RDBMS)
-sudo apt install -y unzip curl nodejs npm
+# Install unzip and curl 
+sudo apt install -y unzip curl
+
+# Official Node.js (LTS) installation 
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Continue with the rest of your setup...
+
+
+
+# Install CloudWatch Agent (Ubuntu package)
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+sudo dpkg -i amazon-cloudwatch-agent.deb
 
 # Ensure correct working directory
 cd /tmp
 
-# App user and group creation
+# App user and group creation:
+# First, ensure the group 'csye6225' exists.
 sudo groupadd -f csye6225
-id clouduser &>/dev/null || sudo useradd -m -g csye6225 csye6225
+# Then, check if the user 'csye6225' exists; if not, create it.
+id csye6225 &>/dev/null || sudo useradd -m -g csye6225 csye6225
 
-# App deployment
+# App deployment:
 sudo mkdir -p /opt/csye6225/webapp && sudo cp -r /tmp/webapp/* /opt/csye6225/webapp/
 sudo chown -R csye6225:csye6225 /opt/csye6225 && sudo chmod -R 755 /opt/csye6225
 
-# Environment file (pointing to an external database)
+# Create logs directory with proper ownership
+sudo mkdir -p /opt/csye6225/webapp/logs
+sudo chown -R csye6225:csye6225 /opt/csye6225/webapp/logs
+
+
 # sudo tee /opt/csye6225/webapp/.env > /dev/null <<EOF
 # DB_NAME=health_check_db
 # DB_USER=meet
-# DB_PASSWORD=Root@123
+# DB_PASSWORD=your_password
 # DB_HOST=<external_db_host>
 # DB_PORT=5432
 # PORT=8080
+# EMAIL_HOST=smtp.yourdomain.com
+# EMAIL_PORT=587
+# EMAIL_SECURE=false
+# EMAIL_USER=your_email_user
+# EMAIL_PASS=your_email_password
+# EMAIL_FROM=you@yourdomain.com
+# TEST_EMAIL_TO=recipient@domain.com
+# STATSD_HOST=localhost
+# STATSD_PORT=8125
 # EOF
 
-# systemd service definition for the web app
+# Copy CloudWatch agent configuration
+sudo cp /tmp/webapp/cloud-watch-agent-config.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# Restart CloudWatch Agent
+sudo amazon-cloudwatch-agent-ctl -a stop
+sudo amazon-cloudwatch-agent-ctl -a start -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -m ec2
+
+# Create systemd service for the web app if not already present
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
-sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
+  sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
 [Unit]
 Description=CSYE6225 Web Application Service
 After=network.target
@@ -50,6 +87,7 @@ WantedBy=multi-user.target
 EOF
 fi
 
+# Reload systemd, enable and start the service
 sudo systemctl daemon-reload
 sudo systemctl enable csye6225
 sudo systemctl start csye6225

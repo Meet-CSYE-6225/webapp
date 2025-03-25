@@ -197,6 +197,15 @@ build {
       "/tmp/webapp/setup.sh"
     ]
   }
+  provisioner "shell" {
+    inline = [
+      "chmod +x /tmp/webapp/setup.sh",
+      "/tmp/webapp/setup.sh",
+      "sudo cp /tmp/webapp/cloud-watch-agent-config.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json",
+      "sudo amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s"
+    ]
+  }
+
   # Step 1: Capture AMI details
   post-processor "manifest" {
     output = "ami_manifest.json"
@@ -217,17 +226,17 @@ build {
       "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
     ]
   }
-  post-processor "shell-local" {
-    only = ["googlecompute.gcp_image"]
-    inline = [
-      "echo 'Fetching latest GCP Image ID...'",
-      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
-      "echo 'Extracted Image Name: ' $IMAGE_NAME",
-      "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
-      "echo 'Granting access to demo project...'",
-      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
-    ]
-  }
+  # post-processor "shell-local" {
+  #   only = ["googlecompute.gcp_image"]
+  #   inline = [
+  #     "echo 'Fetching latest GCP Image ID...'",
+  #     "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+  #     "echo 'Extracted Image Name: ' $IMAGE_NAME",
+  #     "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
+  #     "echo 'Granting access to demo project...'",
+  #     "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
+  #   ]
+  # }
 
 }
 
