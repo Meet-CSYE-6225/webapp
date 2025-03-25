@@ -198,13 +198,13 @@ build {
     ]
   }
   provisioner "shell" {
-  inline = [
-    "chmod +x /tmp/webapp/setup.sh",
-    "/tmp/webapp/setup.sh",
-    "sudo cp /tmp/webapp/cwagent-config.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json",
-    "sudo amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s"
-  ]
-}
+    inline = [
+      "chmod +x /tmp/webapp/setup.sh",
+      "/tmp/webapp/setup.sh",
+      "sudo cp /tmp/webapp/cwagent-config.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json",
+      "sudo amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s"
+    ]
+  }
 
   # Step 1: Capture AMI details
   post-processor "manifest" {
