@@ -44,7 +44,7 @@ sudo chown -R csye6225:csye6225 /opt/csye6225 && sudo chmod -R 755 /opt/csye6225
 # EOF
 
 # Copy CloudWatch agent configuration
-sudo cp /tmp/webapp/cwagent-config.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+sudo cp /tmp/webapp/cloud-watch-agent-config.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 
 # Restart CloudWatch Agent
 sudo amazon-cloudwatch-agent-ctl -a stop
