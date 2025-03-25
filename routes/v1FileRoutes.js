@@ -4,7 +4,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const File = require('../models/fileModel');
 const { statsdClient } = require('../metrics');
-const logger = require('../logger');
+const logger = require('../config/logger');
 
 const router = express.Router();
 const upload = multer();
