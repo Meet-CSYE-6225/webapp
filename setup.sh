@@ -16,15 +16,17 @@ sudo dpkg -i amazon-cloudwatch-agent.deb
 # Ensure correct working directory
 cd /tmp
 
-# App user and group creation
+# App user and group creation:
+# First, ensure the group 'csye6225' exists.
 sudo groupadd -f csye6225
-id clouduser &>/dev/null || sudo useradd -m -g csye6225 csye6225
+# Then, check if the user 'csye6225' exists; if not, create it.
+id csye6225 &>/dev/null || sudo useradd -m -g csye6225 csye6225
 
-# App deployment
+# App deployment:
 sudo mkdir -p /opt/csye6225/webapp && sudo cp -r /tmp/webapp/* /opt/csye6225/webapp/
 sudo chown -R csye6225:csye6225 /opt/csye6225 && sudo chmod -R 755 /opt/csye6225
 
-# (Optional) Uncomment and update your external database settings in .env if needed
+# (Optional) Uncomment and update the following block if you need to configure an external database.
 # sudo tee /opt/csye6225/webapp/.env > /dev/null <<EOF
 # DB_NAME=health_check_db
 # DB_USER=meet
@@ -50,9 +52,9 @@ sudo cp /tmp/webapp/cloud-watch-agent-config.json /opt/aws/amazon-cloudwatch-age
 sudo amazon-cloudwatch-agent-ctl -a stop
 sudo amazon-cloudwatch-agent-ctl -a start -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -m ec2
 
-# Systemd service definition for the web app (if not already present)
+# Create systemd service for the web app if not already present
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then 
-sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
+  sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
 [Unit]
 Description=CSYE6225 Web Application Service
 After=network.target
@@ -69,6 +71,7 @@ WantedBy=multi-user.target
 EOF
 fi
 
+# Reload systemd, enable and start the service
 sudo systemctl daemon-reload
 sudo systemctl enable csye6225
 sudo systemctl start csye6225
