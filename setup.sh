@@ -26,7 +26,11 @@ id csye6225 &>/dev/null || sudo useradd -m -g csye6225 csye6225
 sudo mkdir -p /opt/csye6225/webapp && sudo cp -r /tmp/webapp/* /opt/csye6225/webapp/
 sudo chown -R csye6225:csye6225 /opt/csye6225 && sudo chmod -R 755 /opt/csye6225
 
-# (Optional) Uncomment and update the following block if you need to configure an external database.
+# Create logs directory with proper ownership
+sudo mkdir -p /opt/csye6225/webapp/logs
+sudo chown -R csye6225:csye6225 /opt/csye6225/webapp/logs
+
+
 # sudo tee /opt/csye6225/webapp/.env > /dev/null <<EOF
 # DB_NAME=health_check_db
 # DB_USER=meet
