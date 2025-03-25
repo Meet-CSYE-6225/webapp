@@ -1,17 +1,20 @@
 const express = require('express');
-const AWS = require('aws-sdk');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const File = require('../models/fileModel');
 const { statsdClient } = require('../metrics');
 const logger = require('../config/logger');
 
+// Import AWS SDK v3 modules for S3 operations
+const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+
 const router = express.Router();
 const upload = multer();
 
-// Initialize the S3 client (credentials are automatically picked up from the instance IAM role)
-const s3 = new AWS.S3();
 const bucketName = process.env.S3_BUCKET_NAME;
+// Initialize the S3 client. Credentials are automatically picked up from the instance IAM role.
+const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
 /**
  * Check for authentication header.
@@ -60,11 +63,11 @@ router.post('/', upload.single('file'), async (req, res) => {
       Body: file.buffer,
       ContentType: file.mimetype,
     };
-    logger.info(`Initiating S3 putObject for key: ${fileKey}`);
-    await s3.putObject(params).promise();
+    logger.info(`Initiating S3 PutObject for key: ${fileKey}`);
+    await s3Client.send(new PutObjectCommand(params));
     const s3Duration = Date.now() - s3CallStart;
     statsdClient.timing('s3.putObject', s3Duration);
-    logger.info(`S3 putObject successful for key: ${fileKey} (Duration: ${s3Duration} ms)`);
+    logger.info(`S3 PutObject successful for key: ${fileKey} (Duration: ${s3Duration} ms)`);
 
     // Insert file record into the database
     const dbQueryStart = Date.now();
@@ -79,7 +82,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     statsdClient.timing('db.insertFile', dbDuration);
     logger.info(`Database insert successful for file: ${file.originalname} (Duration: ${dbDuration} ms, Record ID: ${fileRecord.id})`);
 
-    // Build file URL based on bucket and user information
+    // Build file URL based on bucket and user information (for display purposes)
     const fileUrl = `${bucketName}/${userId}/${file.originalname}`;
     const totalDuration = Date.now() - start;
     statsdClient.timing('api.v1File.post', totalDuration);
@@ -117,11 +120,11 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'File not found.' });
     }
     // Generate a pre-signed URL for file retrieval (valid for 1 hour)
-    const fileUrl = s3.getSignedUrl('getObject', {
+    const command = new GetObjectCommand({
       Bucket: bucketName,
       Key: fileRecord.s3Key,
-      Expires: 3600,
     });
+    const fileUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     const duration = Date.now() - start;
     statsdClient.timing('api.v1File.get', duration);
     logger.info(`GET /v1/file/${req.params.id} successful (Duration: ${duration} ms).`);
@@ -154,7 +157,7 @@ router.delete('/:id', async (req, res) => {
       Key: fileRecord.s3Key,
     };
     logger.info(`Initiating deletion of file from S3 for key: ${fileRecord.s3Key}`);
-    await s3.deleteObject(params).promise();
+    await s3Client.send(new DeleteObjectCommand(params));
     logger.info(`S3 deletion successful for key: ${fileRecord.s3Key}`);
     
     logger.info(`Deleting file record from the database for file ID: ${fileRecord.id}`);
