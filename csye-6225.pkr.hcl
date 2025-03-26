@@ -186,6 +186,12 @@ build {
   }
 
   provisioner "shell" {
+    inline = [
+      "wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb",
+      "sudo dpkg -i -E ./amazon-cloudwatch-agent.deb"
+    ]
+  }
+  provisioner "shell" {
     environment_vars = [
       "DB_NAME=${var.DB_NAME}",
       "DB_USER=${var.DB_USER}",
