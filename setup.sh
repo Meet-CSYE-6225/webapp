@@ -19,16 +19,24 @@ id csye6225 &>/dev/null || sudo useradd -m -g csye6225 csye6225
 # Update package lists and install prerequisites
 sudo apt update && sudo apt install -y curl gnupg ca-certificates
 
-# Add the NodeSource repository for the latest LTS version (change to setup_current.x if you prefer the bleeding edge)
+# Add the NodeSource repository for the latest LTS version
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 
 # Install Node.js (includes npm)
 sudo apt-get install -y nodejs
 
-
 # App deployment: copy application files to the target directory
 sudo mkdir -p /opt/csye6225/webapp && sudo cp -r /tmp/webapp/* /opt/csye6225/webapp/
-sudo chown -R csye6225:csye6225 /opt/csye6225 && sudo chmod -R 755 /opt/csye6225
+sudo chown -R csye6225:csye6225 /opt/csye6225/webapp && sudo chmod -R 755 /opt/csye6225/webapp
+
+# OPTIONAL: Create the .env file if it does not exist
+# (This ensures the file exists before the application attempts to read from it.
+#  Note: Your Terraform user-data script should also create and populate this file.
+#  Ensure that these two methods do not conflict.)
+if [ ! -f "/opt/csye6225/webapp/.env" ]; then
+  sudo touch /opt/csye6225/webapp/.env
+  sudo chmod 644 /opt/csye6225/webapp/.env
+fi
 
 # Create logs directory with proper permissions
 sudo mkdir -p /opt/csye6225/webapp/logs
