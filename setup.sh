@@ -44,7 +44,6 @@ WorkingDirectory=/opt/csye6225/webapp
 ExecStart=/usr/bin/node app.js
 Restart=on-failure
 
-
 [Install]
 WantedBy=multi-user.target
 EOF
