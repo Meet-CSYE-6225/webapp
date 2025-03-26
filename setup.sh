@@ -30,23 +30,12 @@ sudo mkdir -p /opt/csye6225/webapp && sudo cp -r /tmp/webapp/* /opt/csye6225/web
 sudo chown -R csye6225:csye6225 /opt/csye6225/webapp && sudo chmod -R 755 /opt/csye6225/webapp
 
 # OPTIONAL: Create the .env file if it does not exist
-# (This ensures the file exists before the application attempts to read from it.
-#  Note: Your Terraform user-data script should also create and populate this file.
-#  Ensure that these two methods do not conflict.)
 if [ ! -f "/opt/csye6225/webapp/.env" ]; then
   sudo touch /opt/csye6225/webapp/.env
   sudo chmod 644 /opt/csye6225/webapp/.env
 fi
 
-# Create logs directory with proper permissions
-sudo mkdir -p /opt/csye6225/webapp/logs
-sudo chown csye6225:csye6225 /opt/csye6225/webapp/logs
-sudo chmod 755 /opt/csye6225/webapp/logs
-
-# Create the log file and set proper permissions
-sudo touch /opt/csye6225/webapp/logs/app.log
-sudo chown csye6225:csye6225 /opt/csye6225/webapp/logs/app.log
-sudo chmod 644 /opt/csye6225/webapp/logs/app.log
+# (Note: No local logs directory or log file is created now.)
 
 # Create systemd service definition for the web app (if not already created)
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then
@@ -61,6 +50,8 @@ User=csye6225
 WorkingDirectory=/opt/csye6225/webapp
 ExecStart=/usr/bin/node app.js
 Restart=on-failure
+StandardOutput=syslog
+StandardError=syslog
 
 [Install]
 WantedBy=multi-user.target

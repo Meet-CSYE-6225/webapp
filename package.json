@@ -16,7 +16,10 @@
     "multer": "^1.4.5-lts.1",
     "pg": "^8.11.1",
     "sequelize": "^6.32.1",
-    "sinon": "^19.0.2"
+    "sinon": "^19.0.2",
+    "winston": "^3.8.2",
+    "winston-cloudwatch": "^3.0.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.x.x"
   },
   "devDependencies": {
     "chai": "^5.1.2",
