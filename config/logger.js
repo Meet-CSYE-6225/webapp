@@ -1,52 +1,23 @@
 // logger.js
-const fs = require('fs');
-const path = require('path');
+const winston = require('winston');
+require('winston-cloudwatch');
 
-// Define the log file location
-const logFilePath = '/opt/csye6225/webapp/logs/app.log';
-const logDir = path.dirname(logFilePath);
+// Create a logger instance that sends logs directly to CloudWatch
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.CloudWatch({
+      logGroupName: process.env.CLOUDWATCH_LOG_GROUP || 'csye6225-app-logs',
+      logStreamName: process.env.CLOUDWATCH_LOG_STREAM || 'app-logs',
+      awsRegion: process.env.AWS_REGION || 'us-east-1',
+      jsonMessage: true,
+      // You can optionally set additional parameters like submissionInterval, batchSize, etc.
+    })
+  ]
+});
 
-// Check if the directory exists; if not, create it recursively
-try {
-  if (!fs.existsSync(logDir)) {
-    fs.mkdirSync(logDir, { recursive: true });
-    console.log(`Log directory created: ${logDir}`);
-  }
-} catch (err) {
-  console.error(`Failed to create log directory at ${logDir}:`, err);
-  process.exit(1);
+// Optionally, during development, add console output so you can see logs locally as well.
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console());
 }
-
-// Create a write stream in append mode
-const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
-
-function formatMessage(level, message, error) {
-  const timestamp = new Date().toISOString();
-  let logMsg = `${timestamp} [${level}] ${message}`;
-  if (error && error.stack) {
-    logMsg += `\n${error.stack}`;
-  }
-  return logMsg;
-}
-
-function writeLog(level, message, error) {
-  const logMsg = formatMessage(level, message, error);
-  // Write to console
-  if (level === 'error') {
-    console.error(logMsg);
-  } else if (level === 'warn') {
-    console.warn(logMsg);
-  } else {
-    console.log(logMsg);
-  }
-  // Write to file
-  logStream.write(logMsg + '\n');
-}
-
-const logger = {
-  info: (msg) => writeLog('info', msg),
-  warn: (msg) => writeLog('warn', msg),
-  error: (msg, error) => writeLog('error', msg, error),
-};
 
 module.exports = logger;
