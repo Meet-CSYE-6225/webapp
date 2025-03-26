@@ -81,15 +81,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      # - name: Authenticate to Google Cloud
+      #   uses: google-github-actions/auth@v1
+      #   with:
+      #     credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Setup GCP CLI
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      # - name: Setup GCP CLI
+      #   uses: google-github-actions/setup-gcloud@v1
+      #   with:
+      #     project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@v2
@@ -112,15 +112,15 @@ jobs:
                   AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
                   aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
     
-      - name: Share GCP Image with Demo Project
-        run: |
-                          IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
-                          echo "Extracted Image Name: $IMAGE_NAME"
-                          if [ -z "$IMAGE_NAME" ]; then
-                            echo "Error: No image found!"
-                            exit 1
-                          fi
-                          gcloud compute images add-iam-policy-binding "$IMAGE_NAME" \
-                            --project="${{ secrets.GCP_PROJECT_ID }}" \
-                            --member="serviceAccount:${{ secrets.GCP_DEMO_ACCOUNT }}" \
-                            --role="roles/compute.imageUser"
+      # - name: Share GCP Image with Demo Project
+      #   run: |
+      #                     IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
+      #                     echo "Extracted Image Name: $IMAGE_NAME"
+      #                     if [ -z "$IMAGE_NAME" ]; then
+      #                       echo "Error: No image found!"
+      #                       exit 1
+      #                     fi
+      #                     gcloud compute images add-iam-policy-binding "$IMAGE_NAME" \
+      #                       --project="${{ secrets.GCP_PROJECT_ID }}" \
+      #                       --member="serviceAccount:${{ secrets.GCP_DEMO_ACCOUNT }}" \
+      #                       --role="roles/compute.imageUser"
