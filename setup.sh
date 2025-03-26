@@ -45,6 +45,11 @@ sudo mkdir -p /opt/csye6225/webapp/logs
 sudo chown csye6225:csye6225 /opt/csye6225/webapp/logs
 sudo chmod 755 /opt/csye6225/webapp/logs
 
+# Create the log file and set proper permissions
+sudo touch /opt/csye6225/webapp/logs/app.log
+sudo chown csye6225:csye6225 /opt/csye6225/webapp/logs/app.log
+sudo chmod 644 /opt/csye6225/webapp/logs/app.log
+
 # systemd service definition for the web app
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then
   sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
