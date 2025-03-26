@@ -2,8 +2,14 @@
 const fs = require('fs');
 const path = require('path');
 
-// Define the log file location (ensure that the directory exists and is writable)
+// Define the log file location
 const logFilePath = '/opt/csye6225/webapp/logs/app.log';
+const logDir = path.dirname(logFilePath);
+
+// Check if the directory exists; if not, create it recursively
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
 
 // Create a write stream in append mode
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
