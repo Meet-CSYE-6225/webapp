@@ -4,10 +4,10 @@ packer {
       version = ">= 1.0.0"
       source  = "github.com/hashicorp/amazon"
     }
-    googlecompute = {
-      version = ">= 1.0.0"
-      source  = "github.com/hashicorp/googlecompute"
-    }
+    # googlecompute = {
+    #   version = ">= 1.0.0"
+    #   source  = "github.com/hashicorp/googlecompute"
+    # }
   }
 }
 
@@ -154,22 +154,22 @@ source "amazon-ebs" "ubuntu" {
 }
 
 # --- GCP Builder ---
-source "googlecompute" "ubuntu" {
-  project_id              = var.gcp_project_id
-  zone                    = var.gcp_zone
-  machine_type            = var.gcp_machine_type
-  image_name              = "csye-{{timestamp}}"
-  source_image_family     = "ubuntu-2204-lts"
-  source_image_project_id = ["ubuntu-os-cloud"]
-  ssh_username            = "packer"
-  disk_size               = var.volume_size
-  disk_type               = var.gcp_disk_type
-}
+# source "googlecompute" "ubuntu" {
+#   project_id              = var.gcp_project_id
+#   zone                    = var.gcp_zone
+#   machine_type            = var.gcp_machine_type
+#   image_name              = "csye-{{timestamp}}"
+#   source_image_family     = "ubuntu-2204-lts"
+#   source_image_project_id = ["ubuntu-os-cloud"]
+#   ssh_username            = "packer"
+#   disk_size               = var.volume_size
+#   disk_type               = var.gcp_disk_type
+# }
 
 build {
   sources = [
-    "source.amazon-ebs.ubuntu",
-    "source.googlecompute.ubuntu"
+    "source.amazon-ebs.ubuntu"
+    //"source.googlecompute.ubuntu"
   ]
 
   # Create destination directory
@@ -217,17 +217,17 @@ build {
       "aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission \"{\\\"Add\\\":[{\\\"UserId\\\":\\\"585008064466\\\"},{\\\"UserId\\\":\\\"619071353173\\\"}]}\" --region ${var.aws_region}"
     ]
   }
-  post-processor "shell-local" {
-    only = ["googlecompute.gcp_image"]
-    inline = [
-      "echo 'Fetching latest GCP Image ID...'",
-      "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
-      "echo 'Extracted Image Name: ' $IMAGE_NAME",
-      "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
-      "echo 'Granting access to demo project...'",
-      "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
-    ]
-  }
+  # post-processor "shell-local" {
+  #   only = ["googlecompute.gcp_image"]
+  #   inline = [
+  #     "echo 'Fetching latest GCP Image ID...'",
+  #     "IMAGE_NAME=$(gcloud compute images list --project=${var.gcp_project_id} --filter='name~custom-node-postgres-app-*' --sort-by='~creationTimestamp' --limit=1 --format='value(NAME)')",
+  #     "echo 'Extracted Image Name: ' $IMAGE_NAME",
+  #     "[ -z \"$IMAGE_NAME\" ] && echo 'Error: Image name not found in GCP!' && exit 1",
+  #     "echo 'Granting access to demo project...'",
+  #     "gcloud compute images add-iam-policy-binding \"$IMAGE_NAME\" --project=\"${var.gcp_project_id}\" --member=\"serviceAccount:${var.gcp_demo_account}\" --role=\"roles/compute.imageUser\""
+  #   ]
+  # }
 
 }
 
