@@ -6,20 +6,23 @@ export DEBIAN_FRONTEND=noninteractive
 # Update packages
 sudo apt update -y && sudo apt upgrade -y
 
-# Install curl and unzip if not installed
+# Install necessary packages
 sudo apt install -y curl unzip
 
-# Install Node.js from NodeSource (latest LTS or current version)
-# For the latest current version:
-curl -fsSL https://deb.nodesource.com/setup_current.x | sudo -E bash -
-# Or for the latest LTS version, use:
-# curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+# Install nvm (this installs it for the current user)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 
-sudo apt install -y nodejs
+# Load nvm into current shell session (adjust path as necessary)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Install the latest Node.js version using nvm
+nvm install node
 
 # Verify installation
 node -v
 npm -v
+
 
 # Ensure correct working directory
 cd /tmp
