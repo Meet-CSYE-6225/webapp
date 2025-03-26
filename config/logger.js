@@ -7,8 +7,14 @@ const logFilePath = '/opt/csye6225/webapp/logs/app.log';
 const logDir = path.dirname(logFilePath);
 
 // Check if the directory exists; if not, create it recursively
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir, { recursive: true });
+try {
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+    console.log(`Log directory created: ${logDir}`);
+  }
+} catch (err) {
+  console.error(`Failed to create log directory at ${logDir}:`, err);
+  process.exit(1);
 }
 
 // Create a write stream in append mode
