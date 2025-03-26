@@ -10,7 +10,10 @@ const logger = winston.createLogger({
       logStreamName: process.env.CLOUDWATCH_LOG_STREAM || 'app-logs',
       awsRegion: process.env.AWS_REGION || 'us-east-1',
       jsonMessage: true,
-      // You can optionally set additional parameters like submissionInterval, batchSize, etc.
+      // Explicitly set credentials from environment variables
+      awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      awsSecretKey: process.env.AWS_SECRET_ACCESS_KEY,
+      // Optionally, you can add parameters like submissionInterval or batchSize here
     })
   ]
 });
