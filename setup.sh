@@ -18,25 +18,25 @@ id csye6225 &>/dev/null || sudo useradd -m -g csye6225 csye6225
 
 # Install nvm and Node.js for the csye6225 user
 sudo -i -u csye6225 bash << 'EOF'
-  # Install nvm
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-
+  # Install nvm if not already installed
+  if [ ! -d "$HOME/.nvm" ]; then
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+  fi
   # Load nvm
   export NVM_DIR="$HOME/.nvm"
   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-  # Install the latest Node.js version
-  nvm install node
-
+  # Install the latest Node.js version (if not already installed)
+  nvm install node || true
   # Set default Node.js version
   nvm alias default node
 EOF
 
 # Create symbolic links to make node and npm accessible system-wide
-sudo ln -sf /home/csye6225/.nvm/versions/node/$(sudo -i -u csye6225 bash -c 'nvm current')/bin/node /usr/bin/node
-sudo ln -sf /home/csye6225/.nvm/versions/node/$(sudo -i -u csye6225 bash -c 'nvm current')/bin/npm /usr/bin/npm
+NODE_PATH=$(find /home/csye6225/.nvm/versions/node/ -maxdepth 1 -type d | sort | tail -n 1)
+sudo ln -sf "$NODE_PATH/bin/node" /usr/bin/node
+sudo ln -sf "$NODE_PATH/bin/npm" /usr/bin/npm
 
-# App deployment
+# App deployment: copy application files to the target directory
 sudo mkdir -p /opt/csye6225/webapp && sudo cp -r /tmp/webapp/* /opt/csye6225/webapp/
 sudo chown -R csye6225:csye6225 /opt/csye6225 && sudo chmod -R 755 /opt/csye6225
 
@@ -50,7 +50,7 @@ sudo touch /opt/csye6225/webapp/logs/app.log
 sudo chown csye6225:csye6225 /opt/csye6225/webapp/logs/app.log
 sudo chmod 644 /opt/csye6225/webapp/logs/app.log
 
-# systemd service definition for the web app
+# Create systemd service definition for the web app (if not already created)
 if [ ! -f "/etc/systemd/system/csye6225.service" ]; then
   sudo tee /etc/systemd/system/csye6225.service > /dev/null <<EOF
 [Unit]
