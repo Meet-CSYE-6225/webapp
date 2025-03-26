@@ -7,7 +7,7 @@ export DEBIAN_FRONTEND=noninteractive
 sudo apt update -y && sudo apt upgrade -y
 
 # Install necessary packages
-sudo apt install -y curl unzip
+sudo apt install -y curl unzip curl nodejs npm
 
 # Ensure correct working directory
 cd /tmp
@@ -29,11 +29,15 @@ sudo apt-get install -y nodejs
 sudo mkdir -p /opt/csye6225/webapp && sudo cp -r /tmp/webapp/* /opt/csye6225/webapp/
 sudo chown -R csye6225:csye6225 /opt/csye6225/webapp && sudo chmod -R 755 /opt/csye6225/webapp
 
-# OPTIONAL: Create the .env file if it does not exist
-if [ ! -f "/opt/csye6225/webapp/.env" ]; then
-  sudo touch /opt/csye6225/webapp/.env
-  sudo chmod 644 /opt/csye6225/webapp/.env
-fi
+# Environment file (pointing to an external database)
+# sudo tee /opt/csye6225/webapp/.env > /dev/null <<EOF
+# DB_NAME=health_check_db
+# DB_USER=meet
+# DB_PASSWORD=Root@123
+# DB_HOST=<external_db_host>
+# DB_PORT=5432
+# PORT=8080
+# EOF
 
 # (Note: No local logs directory or log file is created now.)
 
