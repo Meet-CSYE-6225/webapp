@@ -19,7 +19,9 @@
     "sinon": "^19.0.2",
     "winston": "^3.8.2",
     "winston-cloudwatch": "^3.0.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.x.x"
+    "@aws-sdk/client-cloudwatch-logs": "^3.x.x",
+    "uuid": "^8.3.2",
+    "hot-shots": "^9.0.0"
   },
   "devDependencies": {
     "chai": "^5.1.2",
