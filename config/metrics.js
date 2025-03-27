@@ -1,29 +1,27 @@
+const StatsD = require('hot-shots');
 
-class DummyStatsD {
-    increment(metric) {
-      console.log(`Metric incremented: ${metric}`);
-    }
-    timing(metric, duration) {
-      console.log(`Metric timing - ${metric}: ${duration}ms`);
-    }
-  }
-  
-  // Instantiate the dummy client
-  const statsdClient = new DummyStatsD();
-  
-  // Middleware to record API metrics
-  function metricsMiddleware(req, res, next) {
-    const startTime = Date.now();
-    res.on('finish', () => {
-      const duration = Date.now() - startTime;
-      // Sanitize originalUrl for metric naming: replace / with . and trim dots
-      const metricName = req.originalUrl.replace(/\//g, '.').replace(/^\.+|\.+$/g, '');
-      // Increment call count and record response time
-      statsdClient.increment(`api.${metricName}.count`);
-      statsdClient.timing(`api.${metricName}.response_time`, duration);
-    });
-    next();
-  }
-  
-  module.exports = { statsdClient, metricsMiddleware };
-  
+// Create a singleton instance of the real StatsD client.
+const statsdClient = new StatsD({
+  host: process.env.STATSD_HOST || 'localhost',
+  port: process.env.STATSD_PORT || 8125,
+  prefix: process.env.STATSD_PREFIX || 'webapp.'
+});
+
+// Middleware to record API metrics:
+// It measures the total processing time (timer metric)
+// and increments a counter for each API call.
+function metricsMiddleware(req, res, next) {
+  const startTime = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    // Generate a metric name by replacing "/" with "." and trimming extra dots.
+    const metricName = req.originalUrl.replace(/\//g, '.').replace(/^\.+|\.+$/g, '');
+    // Record the API call duration (Timer metric, in ms)
+    statsdClient.timing(`api.${metricName}.response_time`, duration);
+    // Increment the counter for this API endpoint
+    statsdClient.increment(`api.${metricName}.calls`);
+  });
+  next();
+}
+
+module.exports = { statsdClient, metricsMiddleware };

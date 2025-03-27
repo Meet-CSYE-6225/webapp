@@ -9,13 +9,15 @@ const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.printf(({ level, message, timestamp }) => `${timestamp} [${level.toUpperCase()}] ${message}`)
+    winston.format.printf(({ level, message, timestamp }) =>
+      `${timestamp} [${level.toUpperCase()}] ${message}`
+    )
   ),
   transports: [new winston.transports.Console()]
 });
 const statsd = new StatsD({ host: 'localhost', port: 8125, prefix: 'webapp.' });
 
-// GET /healthz
+// GET /healthz: Create a health check entry and record metrics.
 router.get('/', async (req, res) => {
   const start = Date.now();
   try {
@@ -32,7 +34,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /data (debugging)
+// GET /healthz/data: Retrieve health check data and record metrics.
 router.get('/data', async (req, res) => {
   const start = Date.now();
   try {
@@ -49,9 +51,9 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// Handle unsupported methods
+// Handle unsupported methods on /healthz.
 router.all('/', (req, res) => {
-  logger.warn(`Method ${req.method} not allowed on /`);
+  logger.warn(`Method ${req.method} not allowed on /healthz`);
   res.status(StatusCodes.METHOD_NOT_ALLOWED).set('Cache-Control', 'no-cache').end();
 });
 
