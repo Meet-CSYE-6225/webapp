@@ -2,7 +2,7 @@ const express = require('express');
 const { StatusCodes } = require('http-status-codes');
 const HealthCheck = require('../models/healthCheckModel');
 const winston = require('winston');
-const StatsD = require('hot-shots');
+const { statsdClient } = require('../config/metrics'); // Use shared StatsD client
 
 const router = express.Router();
 const logger = winston.createLogger({
@@ -15,7 +15,6 @@ const logger = winston.createLogger({
   ),
   transports: [new winston.transports.Console()]
 });
-const statsd = new StatsD({ host: 'localhost', port: 8125, prefix: 'webapp.' });
 
 // GET /healthz: Create a health check entry and record metrics.
 router.get('/', async (req, res) => {
@@ -29,8 +28,8 @@ router.get('/', async (req, res) => {
     res.status(StatusCodes.SERVICE_UNAVAILABLE).set('Cache-Control', 'no-cache').end();
   } finally {
     const duration = Date.now() - start;
-    statsd.timing('api.GET.healthz', duration);
-    statsd.increment('api.GET.healthz.calls');
+    statsdClient.timing('api.GET.healthz', duration);
+    statsdClient.increment('api.GET.healthz.calls');
   }
 });
 
@@ -46,8 +45,8 @@ router.get('/data', async (req, res) => {
     res.status(StatusCodes.SERVICE_UNAVAILABLE).set('Cache-Control', 'no-cache').end();
   } finally {
     const duration = Date.now() - start;
-    statsd.timing('api.GET.healthz.data', duration);
-    statsd.increment('api.GET.healthz.data.calls');
+    statsdClient.timing('api.GET.healthz.data', duration);
+    statsdClient.increment('api.GET.healthz.data.calls');
   }
 });
 
