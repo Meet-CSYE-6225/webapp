@@ -4,7 +4,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const File = require('../models/fileModel');
 const winston = require('winston');
-const StatsD = require('hot-shots');
+const { statsdClient } = require('../config/metrics'); // Use shared StatsD client
 
 const router = express.Router();
 const upload = multer();
@@ -18,7 +18,6 @@ const logger = winston.createLogger({
   ),
   transports: [new winston.transports.Console()]
 });
-const statsd = new StatsD({ host: 'localhost', port: 8125, prefix: 'webapp.' });
 
 const s3 = new AWS.S3();
 const bucketName = process.env.S3_BUCKET_NAME;
@@ -58,7 +57,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     const s3Start = Date.now();
     await s3.putObject(params).promise();
     const s3Duration = Date.now() - s3Start;
-    statsd.timing('s3.putObject.time', s3Duration);
+    statsdClient.timing('s3.putObject.time', s3Duration);
 
     const fileRecord = await File.create({
       fileName: file.originalname,
@@ -79,8 +78,8 @@ router.post('/', upload.single('file'), async (req, res) => {
     res.status(500).json({ message: 'File upload failed.' });
   } finally {
     const apiDuration = Date.now() - start;
-    statsd.timing('api.POST.v1.file.time', apiDuration);
-    statsd.increment('api.POST.v1.file.calls');
+    statsdClient.timing('api.POST.v1.file.time', apiDuration);
+    statsdClient.increment('api.POST.v1.file.calls');
   }
 });
 
@@ -116,8 +115,8 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: 'File retrieval failed.' });
   } finally {
     const apiDuration = Date.now() - start;
-    statsd.timing('api.GET.v1.file.id.time', apiDuration);
-    statsd.increment('api.GET.v1.file.id.calls');
+    statsdClient.timing('api.GET.v1.file.id.time', apiDuration);
+    statsdClient.increment('api.GET.v1.file.id.calls');
   }
 });
 
@@ -132,11 +131,10 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'File not found.' });
     }
     const params = { Bucket: bucketName, Key: fileRecord.s3Key };
-    // Time the AWS S3 deleteObject call.
     const s3Start = Date.now();
     await s3.deleteObject(params).promise();
     const s3Duration = Date.now() - s3Start;
-    statsd.timing('s3.deleteObject.time', s3Duration);
+    statsdClient.timing('s3.deleteObject.time', s3Duration);
     await fileRecord.destroy();
     logger.info(`File deleted: ${fileRecord.fileName}`);
     res.status(204).end();
@@ -145,8 +143,8 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: 'File deletion failed.' });
   } finally {
     const apiDuration = Date.now() - start;
-    statsd.timing('api.DELETE.v1.file.id.time', apiDuration);
-    statsd.increment('api.DELETE.v1.file.id.calls');
+    statsdClient.timing('api.DELETE.v1.file.id.time', apiDuration);
+    statsdClient.increment('api.DELETE.v1.file.id.calls');
   }
 });
 
