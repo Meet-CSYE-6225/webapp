@@ -12,7 +12,9 @@ const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.printf(({ level, message, timestamp }) => `${timestamp} [${level.toUpperCase()}] ${message}`)
+    winston.format.printf(({ level, message, timestamp }) =>
+      `${timestamp} [${level.toUpperCase()}] ${message}`
+    )
   ),
   transports: [new winston.transports.Console()]
 });
@@ -34,7 +36,7 @@ function formatDate(date) {
   return date.toISOString().split('T')[0];
 }
 
-// POST /v1/file
+// POST /v1/file: Upload a file, record S3 and API metrics.
 router.post('/', upload.single('file'), async (req, res) => {
   const start = Date.now();
   if (!requireAuth(req, res)) return;
@@ -52,9 +54,12 @@ router.post('/', upload.single('file'), async (req, res) => {
       Body: file.buffer,
       ContentType: file.mimetype,
     };
+    // Time the AWS S3 putObject call.
     const s3Start = Date.now();
     await s3.putObject(params).promise();
-    statsd.timing('s3.putObject', Date.now() - s3Start);
+    const s3Duration = Date.now() - s3Start;
+    statsd.timing('s3.putObject.time', s3Duration);
+
     const fileRecord = await File.create({
       fileName: file.originalname,
       s3Key: fileKey,
@@ -73,18 +78,19 @@ router.post('/', upload.single('file'), async (req, res) => {
     logger.error('Error uploading file', { error });
     res.status(500).json({ message: 'File upload failed.' });
   } finally {
-    statsd.timing('api.POST.v1.file', Date.now() - start);
+    const apiDuration = Date.now() - start;
+    statsd.timing('api.POST.v1.file.time', apiDuration);
     statsd.increment('api.POST.v1.file.calls');
   }
 });
 
-// HEAD /v1/file/:id
+// HEAD /v1/file/:id: Not supported.
 router.head('/:id', (req, res) => {
   logger.warn('HEAD request not supported');
   res.status(405).json({ message: 'HTTP Method not supported on this endpoint.' });
 });
 
-// GET /v1/file/:id
+// GET /v1/file/:id: Retrieve file details, record API metrics.
 router.get('/:id', async (req, res) => {
   const start = Date.now();
   try {
@@ -109,12 +115,13 @@ router.get('/:id', async (req, res) => {
     logger.error('Error retrieving file', { error });
     res.status(500).json({ message: 'File retrieval failed.' });
   } finally {
-    statsd.timing('api.GET.v1.file.id', Date.now() - start);
+    const apiDuration = Date.now() - start;
+    statsd.timing('api.GET.v1.file.id.time', apiDuration);
     statsd.increment('api.GET.v1.file.id.calls');
   }
 });
 
-// DELETE /v1/file/:id
+// DELETE /v1/file/:id: Delete file from S3 and database, record metrics.
 router.delete('/:id', async (req, res) => {
   const start = Date.now();
   if (!requireAuth(req, res)) return;
@@ -125,9 +132,11 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'File not found.' });
     }
     const params = { Bucket: bucketName, Key: fileRecord.s3Key };
+    // Time the AWS S3 deleteObject call.
     const s3Start = Date.now();
     await s3.deleteObject(params).promise();
-    statsd.timing('s3.deleteObject', Date.now() - s3Start);
+    const s3Duration = Date.now() - s3Start;
+    statsd.timing('s3.deleteObject.time', s3Duration);
     await fileRecord.destroy();
     logger.info(`File deleted: ${fileRecord.fileName}`);
     res.status(204).end();
@@ -135,12 +144,13 @@ router.delete('/:id', async (req, res) => {
     logger.error('Error deleting file', { error });
     res.status(500).json({ message: 'File deletion failed.' });
   } finally {
-    statsd.timing('api.DELETE.v1.file.id', Date.now() - start);
+    const apiDuration = Date.now() - start;
+    statsd.timing('api.DELETE.v1.file.id.time', apiDuration);
     statsd.increment('api.DELETE.v1.file.id.calls');
   }
 });
 
-// Handle unsupported methods
+// Handle unsupported methods on /v1/file.
 router.all('/', (req, res) => {
   if (['GET', 'DELETE'].includes(req.method)) {
     logger.warn('Bad request on /v1/file');
@@ -150,7 +160,6 @@ router.all('/', (req, res) => {
     res.status(405).json({ message: 'HTTP Method not supported on this endpoint.' });
   }
 });
-
 router.all('/:id', (req, res) => {
   if (!['GET', 'DELETE'].includes(req.method)) {
     logger.warn(`Method ${req.method} not supported on /v1/file/:id`);
