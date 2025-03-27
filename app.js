@@ -1,37 +1,32 @@
-// app.js
 const express = require('express');
 const { StatusCodes } = require('http-status-codes');
 const { Client } = require('pg');
 const sequelize = require('./config/database');
 const HealthCheck = require('./models/healthCheckModel');
 const logger = require('./config/logger');
-const StatsD = require('hot-shots');
+const { statsdClient } = require('./config/metrics'); // Use shared StatsD client
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Configure StatsD using hot-shots
-const statsd = new StatsD({ host: 'localhost', port: 8125, prefix: 'webapp.' });
-
-// Wrap raw pg queries to measure execution time (in ms) and record a Timer metric.
+// Wrap raw pg queries to measure execution time and record a Timer metric.
 async function timedPgQuery(client, queryText, values, metricName) {
   const start = Date.now();
   const result = await client.query(queryText, values);
   const duration = Date.now() - start;
-  statsd.timing(`db.${metricName}`, duration);
+  statsdClient.timing(`db.${metricName}`, duration);
   return result;
 }
 
-// Wrap Sequelize query calls to measure execution time (in ms) and record a Timer metric.
+// Wrap Sequelize query calls to measure execution time and record a Timer metric.
 async function timedSequelizeQuery(queryFunction, metricName, ...args) {
   const start = Date.now();
   const result = await queryFunction(...args);
   const duration = Date.now() - start;
-  statsd.timing(`db.${metricName}`, duration);
+  statsdClient.timing(`db.${metricName}`, duration);
   return result;
 }
-
 
 // PostgreSQL Client for database creation
 async function ensureDatabaseExists() {
@@ -96,10 +91,8 @@ app.use((req, res, next) => {
   logger.info(`Received ${req.method} request to ${req.path}`);
   res.on('finish', () => {
     const duration = Date.now() - start;
-    // Timer metric for the API call duration
-    statsd.timing(`api.${req.method}.${req.path.replace(/\//g, '_')}`, duration);
-    // Counter metric for number of calls
-    statsd.increment(`api.${req.method}.${req.path.replace(/\//g, '_')}.calls`);
+    statsdClient.timing(`api.${req.method}.${req.path.replace(/\//g, '_')}`, duration);
+    statsdClient.increment(`api.${req.method}.${req.path.replace(/\//g, '_')}.calls`);
     logger.info(`Completed ${req.method} ${req.path} with status ${res.statusCode} in ${duration}ms`);
   });
   next();
@@ -125,7 +118,7 @@ app.head('/healthz', (req, res) => {
   res.status(StatusCodes.METHOD_NOT_ALLOWED).set('Cache-Control', 'no-cache').end();
 });
 
-// GET /healthz: If RDS is down, an error is caught and 503 is returned.
+// GET /healthz: Return 503 if RDS service is stopped.
 app.get('/healthz', async (req, res) => {
   try {
     logger.info('Checking database and tables before processing request');
@@ -138,6 +131,10 @@ app.get('/healthz', async (req, res) => {
     res.status(StatusCodes.OK).set('Cache-Control', 'no-cache').end();
   } catch (error) {
     logger.error('Health check failed', { error });
+    // If the error indicates a connection issue, assume RDS is stopped.
+    if (error.code === 'ECONNREFUSED') {
+      return res.status(StatusCodes.SERVICE_UNAVAILABLE).json({ message: 'RDS service is stopped' });
+    }
     res.status(StatusCodes.SERVICE_UNAVAILABLE).set('Cache-Control', 'no-cache').end();
   }
 });
