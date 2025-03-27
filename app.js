@@ -1,32 +1,16 @@
+// app.js
 const express = require('express');
 const { StatusCodes } = require('http-status-codes');
 const { Client } = require('pg');
 const sequelize = require('./config/database');
 const HealthCheck = require('./models/healthCheckModel');
-const winston = require('winston');
+// Use the centralized logger from config/logger.js
+const logger = require('./config/logger');
 const StatsD = require('hot-shots');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-// Configure Winston Logger
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.printf(({ level, message, timestamp, ...metadata }) => {
-      let log = `${timestamp} [${level.toUpperCase()}] ${message}`;
-      if (Object.keys(metadata).length > 0) {
-        log += ` ${JSON.stringify(metadata)}`;
-      }
-      return log;
-    })
-  ),
-  transports: [
-    new winston.transports.Console() // Logs to stdout, captured by systemd
-  ]
-});
 
 // Configure StatsD
 const statsd = new StatsD({ host: 'localhost', port: 8125, prefix: 'webapp.' });
