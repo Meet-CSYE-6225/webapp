@@ -1,10 +1,19 @@
-// logger.js
 const winston = require('winston');
 require('winston-cloudwatch');
 
 const transports = [];
 
-// Only add CloudWatch transport if not running in test environment
+// Add a file transport so that logs are written to /var/log/csye6225.log
+transports.push(new winston.transports.File({
+  filename: '/var/log/csye6225.log',
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  )
+}));
+
+// Add CloudWatch transport if not running in test environment
 if (process.env.NODE_ENV !== 'test') {
   transports.push(new winston.transports.CloudWatch({
     logGroupName: process.env.CLOUDWATCH_LOG_GROUP || 'csye6225-app-logs',
@@ -16,10 +25,11 @@ if (process.env.NODE_ENV !== 'test') {
   }));
 }
 
-// Always add console transport for local development and tests
+// Also add console transport for local development and debugging
 transports.push(new winston.transports.Console());
 
 const logger = winston.createLogger({
+  level: 'info',
   transports,
 });
 
