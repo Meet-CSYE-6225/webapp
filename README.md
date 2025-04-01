@@ -9,7 +9,6 @@ This is a simple Node.js-based API for performing health checks on a PostgreSQL 
 - **PostgreSQL**: Install the latest version.
 - **dotenv package**: Used for environment variable management. Install it via npm if it isn’t already installed
 
-
 ## Installation
    - **Clone the repository**:
         - git clone <repository-url>
