@@ -107,11 +107,22 @@ jobs:
             -var "gcp_zone=${{ secrets.GCP_ZONE }}" \
             -var "gcp_destination_project_id=${{ secrets.GCP_DESTINATION_PROJECT_ID }}" \
             csye-6225.pkr.hcl
-      - name: Share AMI  Dev and Demo accounts
+      - name: Share AMI with Dev and Demo Accounts
         run: |
-                  AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=csye-*" --query 'Images[-1].ImageId' --output text)
-                  aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"},{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
-    
+              AMI_NAME_PATTERN="csye-*"
+              echo "Looking up latest AMI with name pattern: ${AMI_NAME_PATTERN}"
+              
+              AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=${AMI_NAME_PATTERN}" --query 'Images[-1].ImageId' --output text)
+              
+              if [ -z "$AMI_ID" ] || [ "$AMI_ID" = "None" ]; then
+                echo "Error: No AMI found with name pattern ${AMI_NAME_PATTERN}"
+                exit 1
+              fi
+              
+              echo "Found AMI_ID: $AMI_ID"
+              
+              aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"}, {\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
+                  
       # - name: Share GCP Image with Demo Project
       #   run: |
       #                     IMAGE_NAME=$(gcloud compute images list --project=${{ secrets.GCP_PROJECT_ID }} --filter="name~csye-*" --sort-by="~creationTimestamp" --limit=1 --format="value(NAME)")
