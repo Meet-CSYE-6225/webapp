@@ -1,6 +1,5 @@
 # Cloud Native Health Check webapp
  
-
 This is a simple Node.js-based API for performing health checks on a PostgreSQL database. It ensures database and table existence, performs health check entries
 
 ## Prerequisites
