@@ -122,6 +122,53 @@ jobs:
               echo "Found AMI_ID: $AMI_ID"
               
               aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"}, {\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
+      - name: Create New Launch Template Version
+        run: |
+                LATEST_AMI_ID=$(aws ec2 describe-images --owners self \
+                  --filters "Name=name,Values=csye-*" \
+                  --query 'Images[-1].ImageId' --output text)
+      
+                echo "Using AMI: $LATEST_AMI_ID"
+      
+                LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
+                  --query "LaunchTemplates[?LaunchTemplateName=='csye6225-lt'].LaunchTemplateId" --output text)
+      
+                aws ec2 create-launch-template-version \
+                  --launch-template-id "$LAUNCH_TEMPLATE_ID" \
+                  --source-version 1 \
+                  --version-description "New AMI version" \
+                  --launch-template-data "{\"ImageId\":\"$LATEST_AMI_ID\"}"
+
+
+      - name: Start Instance Refresh
+        run: |
+                    ASG_NAME=$(aws autoscaling describe-auto-scaling-groups \
+                      --query "AutoScalingGroups[?contains(AutoScalingGroupName, 'asg')].AutoScalingGroupName" \
+                      --output text)
+          
+                    REFRESH_ID=$(aws autoscaling start-instance-refresh --auto-scaling-group-name $ASG_NAME \
+                      --preferences '{"MinHealthyPercentage":90,"InstanceWarmup":300}' \
+                      --query 'InstanceRefreshId' --output text)
+          
+                    echo "Started refresh: $REFRESH_ID"
+          
+                    while true; do
+                      STATUS=$(aws autoscaling describe-instance-refreshes --auto-scaling-group-name $ASG_NAME \
+                        --query "InstanceRefreshes[?InstanceRefreshId=='$REFRESH_ID'].Status" --output text)
+          
+                      echo "Current Refresh Status: $STATUS"
+                      if [[ "$STATUS" == "Successful" || "$STATUS" == "Cancelled" || "$STATUS" == "Failed" ]]; then
+                        break
+                      fi
+                      sleep 30
+                    done
+          
+                    if [[ "$STATUS" != "Successful" ]]; then
+                      echo "Instance refresh failed or was cancelled."
+                      exit 1
+                    fi
+                    
+                
                   
       # - name: Share GCP Image with Demo Project
       #   run: |
