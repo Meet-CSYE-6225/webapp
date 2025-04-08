@@ -139,12 +139,26 @@ jobs:
             
                 echo "Using AMI: $LATEST_AMI_ID"
             
+                # Dynamically find the latest Launch Template name that starts with 'csye6225-lt'
+                LT_NAME=$(aws ec2 describe-launch-templates \
+                  --query "LaunchTemplates[?starts_with(LaunchTemplateName, 'csye6225-lt')].LaunchTemplateName" \
+                  --output text | head -n 1)
+            
+                if [[ -z "$LT_NAME" ]]; then
+                  echo "Error: No Launch Template found with prefix 'csye6225-lt'"
+                  exit 1
+                fi
+            
+                echo "Launch Template Name: $LT_NAME"
+            
+                # Get the Launch Template ID from the name
                 LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
-                  --query "LaunchTemplates[?starts_with(LaunchTemplateName, 'csye')].LaunchTemplateId" \
+                  --filters "Name=launch-template-name,Values=$LT_NAME" \
+                  --query "LaunchTemplates[0].LaunchTemplateId" \
                   --output text)
             
                 if [[ -z "$LAUNCH_TEMPLATE_ID" ]]; then
-                  echo "Error: Could not find a matching Launch Template ID"
+                  echo "Error: Could not find Launch Template ID for $LT_NAME"
                   exit 1
                 fi
             
@@ -155,6 +169,7 @@ jobs:
                   --source-version 1 \
                   --version-description "New AMI version from CI" \
                   --launch-template-data "{\"ImageId\":\"$LATEST_AMI_ID\"}"
+            
             
 
 
