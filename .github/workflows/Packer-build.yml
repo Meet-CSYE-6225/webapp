@@ -124,20 +124,38 @@ jobs:
               aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"}, {\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
       - name: Create New Launch Template Version
         run: |
+                AMI_NAME_PATTERN="csye-*"
+                echo "Looking up latest AMI with name pattern: ${AMI_NAME_PATTERN}"
+            
                 LATEST_AMI_ID=$(aws ec2 describe-images --owners self \
-                  --filters "Name=name,Values=csye-*" \
-                  --query 'Images[-1].ImageId' --output text)
-      
+                  --filters "Name=name,Values=${AMI_NAME_PATTERN}" \
+                  --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
+                  --output text)
+            
+                if [[ -z "$LATEST_AMI_ID" || "$LATEST_AMI_ID" == "None" ]]; then
+                  echo "Error: No AMI found with name pattern ${AMI_NAME_PATTERN}"
+                  exit 1
+                fi
+            
                 echo "Using AMI: $LATEST_AMI_ID"
-      
+            
                 LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
-                  --query "LaunchTemplates[?LaunchTemplateName=='csye6225-lt'].LaunchTemplateId" --output text)
-      
+                  --query "LaunchTemplates[?starts_with(LaunchTemplateName, 'csye')].LaunchTemplateId" \
+                  --output text)
+            
+                if [[ -z "$LAUNCH_TEMPLATE_ID" ]]; then
+                  echo "Error: Could not find a matching Launch Template ID"
+                  exit 1
+                fi
+            
+                echo "Launch Template ID: $LAUNCH_TEMPLATE_ID"
+            
                 aws ec2 create-launch-template-version \
                   --launch-template-id "$LAUNCH_TEMPLATE_ID" \
                   --source-version 1 \
-                  --version-description "New AMI version" \
+                  --version-description "New AMI version from CI" \
                   --launch-template-data "{\"ImageId\":\"$LATEST_AMI_ID\"}"
+            
 
 
       - name: Start Instance Refresh
