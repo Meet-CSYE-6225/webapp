@@ -122,12 +122,13 @@ jobs:
               echo "Found AMI_ID: $AMI_ID"
               
               aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"}, {\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
-      - name: Debug launch templates
+      - name: List All Launch Templates
         run: |
-                echo "Available Launch Templates:"
+                echo "All launch templates in your account:"
                 aws ec2 describe-launch-templates \
                   --query "LaunchTemplates[*].LaunchTemplateName" \
                   --output text
+            
             
       - name: Create New Launch Template Version
         run: |
@@ -146,8 +147,8 @@ jobs:
                 
                     echo "Using AMI: $LATEST_AMI_ID"
                 
-                    # Set the correct launch template prefix after confirming from debug output
-                    LT_PREFIX="csye6225"
+                    # ✅ Set prefix correctly based on actual LT name
+                    LT_PREFIX="csye-"
                 
                     LT_NAME=$(aws ec2 describe-launch-templates \
                       --query "LaunchTemplates[?starts_with(LaunchTemplateName, \`${LT_PREFIX}\`)].LaunchTemplateName" \
