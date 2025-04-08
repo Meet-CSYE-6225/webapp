@@ -122,56 +122,62 @@ jobs:
               echo "Found AMI_ID: $AMI_ID"
               
               aws ec2 modify-image-attribute --image-id $AMI_ID --launch-permission "{\"Add\":[{\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEV }}\"}, {\"UserId\":\"${{ secrets.AWS_ACCOUNT_ID_DEMO }}\"}]}"
+      - name: Debug launch templates
+        run: |
+                echo "Available Launch Templates:"
+                aws ec2 describe-launch-templates \
+                  --query "LaunchTemplates[*].LaunchTemplateName" \
+                  --output text
+            
       - name: Create New Launch Template Version
         run: |
-                AMI_NAME_PATTERN="csye-*"
-                echo "Looking up latest AMI with name pattern: ${AMI_NAME_PATTERN}"
-            
-                LATEST_AMI_ID=$(aws ec2 describe-images --owners self \
-                  --filters "Name=name,Values=${AMI_NAME_PATTERN}" \
-                  --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
-                  --output text)
-            
-                if [[ -z "$LATEST_AMI_ID" || "$LATEST_AMI_ID" == "None" ]]; then
-                  echo "Error: No AMI found with name pattern ${AMI_NAME_PATTERN}"
-                  exit 1
-                fi
-            
-                echo "Using AMI: $LATEST_AMI_ID"
-            
-                # Find latest Launch Template that starts with "csye-"
-                LT_NAME=$(aws ec2 describe-launch-templates \
-                  --query "LaunchTemplates[?starts_with(LaunchTemplateName, 'csye-')].LaunchTemplateName" \
-                  --output text | head -n 1)
-            
-                if [[ -z "$LT_NAME" ]]; then
-                  echo "Error: No Launch Template found with prefix 'csye-'"
-                  exit 1
-                fi
-            
-                echo "Launch Template Name: $LT_NAME"
-            
-                LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
-                  --filters "Name=launch-template-name,Values=$LT_NAME" \
-                  --query "LaunchTemplates[0].LaunchTemplateId" \
-                  --output text)
-            
-                if [[ -z "$LAUNCH_TEMPLATE_ID" ]]; then
-                  echo "Error: Could not find Launch Template ID for $LT_NAME"
-                  exit 1
-                fi
-            
-                echo "Launch Template ID: $LAUNCH_TEMPLATE_ID"
-            
-                aws ec2 create-launch-template-version \
-                  --launch-template-id "$LAUNCH_TEMPLATE_ID" \
-                  --source-version 1 \
-                  --version-description "New AMI version from CI" \
-                  --launch-template-data "{\"ImageId\":\"$LATEST_AMI_ID\"}"
-            
-            
-            
-
+                    AMI_NAME_PATTERN="csye-*"
+                    echo "Looking up latest AMI with name pattern: ${AMI_NAME_PATTERN}"
+                
+                    LATEST_AMI_ID=$(aws ec2 describe-images --owners self \
+                      --filters "Name=name,Values=${AMI_NAME_PATTERN}" \
+                      --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
+                      --output text)
+                
+                    if [[ -z "$LATEST_AMI_ID" || "$LATEST_AMI_ID" == "None" ]]; then
+                      echo "Error: No AMI found with name pattern ${AMI_NAME_PATTERN}"
+                      exit 1
+                    fi
+                
+                    echo "Using AMI: $LATEST_AMI_ID"
+                
+                    # Set the correct launch template prefix after confirming from debug output
+                    LT_PREFIX="csye6225"
+                
+                    LT_NAME=$(aws ec2 describe-launch-templates \
+                      --query "LaunchTemplates[?starts_with(LaunchTemplateName, \`${LT_PREFIX}\`)].LaunchTemplateName" \
+                      --output text | head -n 1)
+                
+                    if [[ -z "$LT_NAME" ]]; then
+                      echo "Error: No Launch Template found with prefix '${LT_PREFIX}'"
+                      exit 1
+                    fi
+                
+                    echo "Launch Template Name: $LT_NAME"
+                
+                    LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
+                      --filters "Name=launch-template-name,Values=$LT_NAME" \
+                      --query "LaunchTemplates[0].LaunchTemplateId" \
+                      --output text)
+                
+                    if [[ -z "$LAUNCH_TEMPLATE_ID" ]]; then
+                      echo "Error: Could not find Launch Template ID for $LT_NAME"
+                      exit 1
+                    fi
+                
+                    echo "Launch Template ID: $LAUNCH_TEMPLATE_ID"
+                
+                    aws ec2 create-launch-template-version \
+                      --launch-template-id "$LAUNCH_TEMPLATE_ID" \
+                      --source-version 1 \
+                      --version-description "New AMI version from CI" \
+                      --launch-template-data "{\"ImageId\":\"$LATEST_AMI_ID\"}"
+                
 
       - name: Start Instance Refresh
         run: |
