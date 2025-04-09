@@ -141,44 +141,42 @@ jobs:
                       --output text)
                 
                     if [[ -z "$LATEST_AMI_ID" || "$LATEST_AMI_ID" == "None" ]]; then
-                      echo "Error: No AMI found with name pattern ${AMI_NAME_PATTERN}"
+                      echo " Error: No AMI found with name pattern ${AMI_NAME_PATTERN}"
                       exit 1
                     fi
                 
-                    echo "Using AMI: $LATEST_AMI_ID"
+                    echo " Using AMI: $LATEST_AMI_ID"
                 
-                    # ✅ Set prefix correctly based on actual LT name
-                    LT_PREFIX="csye-"
+                    # Automatically get the latest launch template name and ID
+                    LAUNCH_TEMPLATE_NAME=$(aws ec2 describe-launch-templates \
+                      --query 'LaunchTemplates | sort_by(@, &CreateTime) | [-1].LaunchTemplateName' \
+                      --output text)
                 
-                    LT_NAME=$(aws ec2 describe-launch-templates \
-                      --query "LaunchTemplates[?starts_with(LaunchTemplateName, \`${LT_PREFIX}\`)].LaunchTemplateName" \
-                      --output text | head -n 1)
-                
-                    if [[ -z "$LT_NAME" ]]; then
-                      echo "Error: No Launch Template found with prefix '${LT_PREFIX}'"
+                    if [[ -z "$LAUNCH_TEMPLATE_NAME" || "$LAUNCH_TEMPLATE_NAME" == "None" ]]; then
+                      echo " Error: No Launch Template found"
                       exit 1
                     fi
                 
-                    echo "Launch Template Name: $LT_NAME"
+                    echo " Launch Template Name: $LAUNCH_TEMPLATE_NAME"
                 
                     LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
-                      --filters "Name=launch-template-name,Values=$LT_NAME" \
+                      --filters "Name=launch-template-name,Values=$LAUNCH_TEMPLATE_NAME" \
                       --query "LaunchTemplates[0].LaunchTemplateId" \
                       --output text)
                 
                     if [[ -z "$LAUNCH_TEMPLATE_ID" ]]; then
-                      echo "Error: Could not find Launch Template ID for $LT_NAME"
+                      echo " Error: Could not find Launch Template ID for $LAUNCH_TEMPLATE_NAME"
                       exit 1
                     fi
                 
-                    echo "Launch Template ID: $LAUNCH_TEMPLATE_ID"
+                    echo " Launch Template ID: $LAUNCH_TEMPLATE_ID"
                 
                     aws ec2 create-launch-template-version \
                       --launch-template-id "$LAUNCH_TEMPLATE_ID" \
                       --source-version 1 \
                       --version-description "New AMI version from CI" \
                       --launch-template-data "{\"ImageId\":\"$LATEST_AMI_ID\"}"
-                
+                                
 
       - name: Start Instance Refresh
         run: |
