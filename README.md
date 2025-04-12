@@ -25,7 +25,6 @@ This is a simple Node.js-based API for performing health checks on a PostgreSQL 
 ## Run the application
     node app.js
 
-
 ## Error Handling
 
     - If the database is unavailable, the health check will return 503 Service Unavailable.   
