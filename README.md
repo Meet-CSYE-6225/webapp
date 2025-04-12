@@ -24,6 +24,12 @@ This is a simple Node.js-based API for performing health checks on a PostgreSQL 
         - PORT=your_app_port
 ## Run the application
     node app.js
+## API Endpoints
+    GET /healthz – Perform a health check
+    GET /v1/file – List all files
+    POST /v1/file – Add a file
+    GET /v1/file/{id} – Retrieve a file by ID
+    DELETE /v1/file/{id} – Delete a file by ID
 
 ## Error Handling
 
