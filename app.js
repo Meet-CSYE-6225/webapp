@@ -154,8 +154,8 @@ app.all('/healthz', (req, res) => {
 });
 
 // Mount file routes
-const v1FileRoutes = require('./routes/v1FileRoutes');
-app.use('/v1/file', v1FileRoutes);
+const v2FileRoutes = require('./routes/v2FileRoutes');
+app.use('/v2/file', v2FileRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
