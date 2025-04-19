@@ -31,6 +31,7 @@ This is a simple Node.js-based API for performing health checks on a PostgreSQL 
     GET /v1/file/{id} – Retrieve a file by ID
     DELETE /v1/file/{id} – Delete a file by ID
 
+
 ## Error Handling
 
     - If the database is unavailable, the health check will return 503 Service Unavailable.   
