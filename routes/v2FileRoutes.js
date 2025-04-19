@@ -35,7 +35,7 @@ function formatDate(date) {
   return date.toISOString().split('T')[0];
 }
 
-// POST /v1/file: Upload a file, record S3 and API metrics.
+// POST /v2/file: Upload a file, record S3 and API metrics.
 router.post('/', upload.single('file'), async (req, res) => {
   const start = Date.now();
   if (!requireAuth(req, res)) return;
@@ -78,18 +78,18 @@ router.post('/', upload.single('file'), async (req, res) => {
     res.status(500).json({ message: 'File upload failed.' });
   } finally {
     const apiDuration = Date.now() - start;
-    statsdClient.timing('api.POST.v1.file.time', apiDuration);
-    statsdClient.increment('api.POST.v1.file.calls');
+    statsdClient.timing('api.POST.v2.file.time', apiDuration);
+    statsdClient.increment('api.POST.v2.file.calls');
   }
 });
 
-// HEAD /v1/file/:id: Not supported.
+// HEAD /v2/file/:id: Not supported.
 router.head('/:id', (req, res) => {
   logger.warn('HEAD request not supported');
   res.status(405).json({ message: 'HTTP Method not supported on this endpoint.' });
 });
 
-// GET /v1/file/:id: Retrieve file details, record API metrics.
+// GET /v2/file/:id: Retrieve file details, record API metrics.
 router.get('/:id', async (req, res) => {
   const start = Date.now();
   try {
@@ -115,12 +115,12 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: 'File retrieval failed.' });
   } finally {
     const apiDuration = Date.now() - start;
-    statsdClient.timing('api.GET.v1.file.id.time', apiDuration);
-    statsdClient.increment('api.GET.v1.file.id.calls');
+    statsdClient.timing('api.GET.v2.file.id.time', apiDuration);
+    statsdClient.increment('api.GET.v2.file.id.calls');
   }
 });
 
-// DELETE /v1/file/:id: Delete file from S3 and database, record metrics.
+// DELETE /v2/file/:id: Delete file from S3 and database, record metrics.
 router.delete('/:id', async (req, res) => {
   const start = Date.now();
   if (!requireAuth(req, res)) return;
@@ -143,24 +143,24 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: 'File deletion failed.' });
   } finally {
     const apiDuration = Date.now() - start;
-    statsdClient.timing('api.DELETE.v1.file.id.time', apiDuration);
-    statsdClient.increment('api.DELETE.v1.file.id.calls');
+    statsdClient.timing('api.DELETE.v2.file.id.time', apiDuration);
+    statsdClient.increment('api.DELETE.v2.file.id.calls');
   }
 });
 
-// Handle unsupported methods on /v1/file.
+// Handle unsupported methods on /v2/file.
 router.all('/', (req, res) => {
   if (['GET', 'DELETE'].includes(req.method)) {
-    logger.warn('Bad request on /v1/file');
+    logger.warn('Bad request on /v2/file');
     res.status(400).json({ message: 'Bad Request' });
   } else {
-    logger.warn(`Method ${req.method} not supported on /v1/file`);
+    logger.warn(`Method ${req.method} not supported on /v2/file`);
     res.status(405).json({ message: 'HTTP Method not supported on this endpoint.' });
   }
 });
 router.all('/:id', (req, res) => {
   if (!['GET', 'DELETE'].includes(req.method)) {
-    logger.warn(`Method ${req.method} not supported on /v1/file/:id`);
+    logger.warn(`Method ${req.method} not supported on /v2/file/:id`);
     res.status(405).json({ message: 'HTTP Method not supported on this endpoint.' });
   }
 });
